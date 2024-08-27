@@ -10,3 +10,5 @@
       - ncdu
       - iotop
       - git
+      - htop
+
