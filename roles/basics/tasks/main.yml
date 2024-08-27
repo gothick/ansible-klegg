@@ -1,6 +1,14 @@
 ---
+
+# TODO: Maybe only run this once, the very first time.
 - name: Update apt packages
   ansible.builtin.apt:
     upgrade: true
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install aptitude
+  ansible.builtin.apt:
+    name: aptitude
     update_cache: true
     cache_valid_time: 3600

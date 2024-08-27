@@ -1,0 +1,20 @@
+---
+- name: Create Ansible default user
+  ansible.builtin.user:
+    name: "{{ ansible_user_name }}"
+    state: present
+    groups: sudo
+    append: true
+    create_home: true
+
+- name: Add user to passwordless sudoers
+  ansible.builtin.template:
+    src: templates/sudoers.j2
+    dest: "/etc/sudoers.d/{{ ansible_user_name }}"
+    mode: "0644"
+
+- name: Add authorised key
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user_name }}"
+    state: present
+    key: "{{ lookup('file', 'files/ansible.pub') }}"

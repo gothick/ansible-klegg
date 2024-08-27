@@ -10,6 +10,7 @@
 
   roles:
     - basics
+    - ansible_user
     - useful_tools
     - virtualbox
     - geerlingguy.pip
