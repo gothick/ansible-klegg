@@ -1,0 +1,79 @@
+---
+
+- name: Install AWS command-line interface package
+  community.general.snap:
+    classic: true
+    name:
+      - aws-cli
+
+- name: Install basic tools
+  ansible.builtin.apt:
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    name:
+      - python3
+      - python3-pip
+      - unzip
+      - ncdu
+      - iotop
+      - git
+      - htop
+
+# Defaults look like:
+# awscli_config_file_path: "/root/.aws/config"
+# awscli_config_ids: {}
+# awscli_config_ids is a dictionary of AWS ID details (key ID, secret key and region) indexed
+# by the name you want to give the key. The first key should be indexed with the name "default":
+#
+# default:
+#   aws_access_key_id: "ID"
+#   aws_secret_access_key: "KEY"
+#   region: us-east-1
+# etc:
+#   ...
+
+- name: Get specified user's home directory
+  ansible.builtin.user:
+    name: "{{ awscli_config_user }}"
+    state: present
+  register: user_info
+  check_mode: true # Don't create the user if they don't exist
+
+- name: Fail if no user found
+  ansible.builtin.fail:
+    msg: "User doesn't exist. Create user {{ awscli_config_user }} before using this playbook."
+  when: user_info.changed
+
+- name: Show config
+  ansible.builtin.debug:
+    var: awscli_config_ids
+
+- name: Set config dir
+  ansible.builtin.set_fact:
+    awscli_config_dir: "{{ user_info.home }}/.aws"
+
+- name: Create config file directory
+  ansible.builtin.file:
+    path: "{{ awscli_config_dir }}"
+    state: directory
+    mode: "0700"
+    owner: "{{ awscli_config_user }}"
+    group: "{{ awscli_config_user }}"
+  when: awscli_config_ids|length > 0
+
+- name: Create config file
+  ansible.builtin.template:
+    src: config.j2
+    dest: "{{ awscli_config_dir }}/config"
+    owner: "{{ awscli_config_user }}"
+    group: "{{ awscli_config_user }}"
+    mode: '0600'
+
+- name: Create credentials file
+  ansible.builtin.template:
+    src: credentials.j2
+    dest: "{{ awscli_config_dir }}/credentials"
+    owner: "{{ awscli_config_user }}"
+    group: "{{ awscli_config_user }}"
+    mode: '0600'

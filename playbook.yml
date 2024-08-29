@@ -6,12 +6,20 @@
   vars:
     vagrant_version: "2.4.1"
 
+  vars_files:
+    - awscli.yml
+
   pre_tasks:
+
+    - name: Show variables
+      ansible.builtin.debug:
+        var: awscli_config_user
 
   roles:
     - basics
     - ansible_user
     - useful_tools
+    - awscli
     - virtualbox
     - geerlingguy.pip
     - vagrant
