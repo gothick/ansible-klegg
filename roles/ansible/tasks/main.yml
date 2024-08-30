@@ -7,4 +7,5 @@
     cache_valid_time: 3600
     name:
       - ansible
+      - ansible-lint # Useful for Visual Studio Ansible plugin, etc.
       - cowsay # Because who *doesn't* want a talking cow?
