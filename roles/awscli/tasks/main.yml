@@ -45,10 +45,6 @@
     msg: "User doesn't exist. Create user {{ awscli_config_user }} before using this playbook."
   when: user_info.changed
 
-- name: Show config
-  ansible.builtin.debug:
-    var: awscli_config_ids
-
 - name: Set config dir
   ansible.builtin.set_fact:
     awscli_config_dir: "{{ user_info.home }}/.aws"
