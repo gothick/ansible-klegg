@@ -1,0 +1,21 @@
+---
+- name: Create main working user
+  ansible.builtin.user:
+    name: "{{ gothick_user_name }}"
+    state: present
+    groups: sudo
+    append: true
+    create_home: true
+
+- name: Add user to passwordless sudoers
+  ansible.builtin.template:
+    src: sudoers.j2
+    dest: "/etc/sudoers.d/{{ gothick_user_name }}"
+    mode: "0644"
+
+- name: Add authorised key
+  ansible.posix.authorized_key:
+    user: "{{ gothick_user_name }}"
+    state: present
+    key: "{{ item }}"
+  loop: "{{ gothick_user_authorised_keys }}"

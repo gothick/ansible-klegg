@@ -18,11 +18,14 @@
   roles:
     - basics
     - ansible_user
+    - gothick_user
+    - ssh_lockdown
     - useful_tools
     - awscli
     - virtualbox
     - geerlingguy.pip
     - vagrant
     - ansible
+    - ssh_lockdown
 
   tasks:

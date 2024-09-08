@@ -1,0 +1,7 @@
+---
+- name: Disallow ssh password authentication
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/disablePasswordAuth.conf
+    content: "PasswordAuthentication no"
+    mode: "0644"
+  notify: Restart ssh daemon
