@@ -1,0 +1,8 @@
+---
+roles:
+  - name: Oefenweb.postfix
+    version: v3.6.4
+
+  - name: geerlingguy.pip
+    version: 3.0.3
+

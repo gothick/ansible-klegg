@@ -1,0 +1,14 @@
+---
+- name: Install AWSCLI tools
+  hosts: all
+  become: true
+
+  vars_files:
+    - awscli.yml
+
+  # pre_tasks:
+
+  roles:
+    - awscli
+
+  tasks:
