@@ -14,6 +14,7 @@
     - gothick_user
     - ssh_lockdown
     - useful_tools
+    - gothick.awscli
     - virtualbox
     - geerlingguy.pip
     - vagrant
@@ -21,9 +22,6 @@
     - ssh_lockdown
 
   tasks:
-
-- name: Configure awscli
-  import_playbook: playbooks/awscli/main.yml
 
 - name: Configure postfix
   import_playbook: playbooks/postfix/main.yml

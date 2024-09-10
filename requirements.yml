@@ -1,8 +1,11 @@
 ---
 roles:
+
+  - name: gothick.awscli
+    src: https://github.com/gothick/ansible-awscli.git
+
   - name: Oefenweb.postfix
     version: v3.6.4
 
   - name: geerlingguy.pip
     version: 3.0.3
-
