@@ -25,3 +25,6 @@
 
 - name: Configure postfix
   import_playbook: playbooks/postfix/main.yml
+
+- name: Set up firewall
+  import_playbook: playbooks/firewall/main.yml

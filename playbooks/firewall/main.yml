@@ -1,0 +1,10 @@
+---
+- name: Set up Firewall
+  hosts: all
+  become: true
+
+  vars_files:
+    - vars.yml
+
+  roles:
+    - geerlingguy.firewall

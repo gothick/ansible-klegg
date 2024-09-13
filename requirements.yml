@@ -9,3 +9,6 @@ roles:
 
   - name: geerlingguy.pip
     version: 3.0.3
+
+  - name: geerlingguy.firewall
+    version: 2.5.1
