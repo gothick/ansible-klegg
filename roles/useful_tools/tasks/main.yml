@@ -11,3 +11,4 @@
       - iotop
       - git
       - htop
+      - curl
