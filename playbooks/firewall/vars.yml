@@ -1,11 +1,21 @@
 ---
 firewall_allowed_tcp_ports:
   - "22"
+  - "80"
+  - "443"
+  - "8080"
+  - "4443"
+
+firewall_forwarded_tcp_ports:
+  - { src: "80", dest: "8080" }
+  - { src: "443", dest: "4443" }
 
 firewall_additional_rules:
   # Allow remote desktop from iMac
   - "iptables -A INPUT -p tcp --dport 3389 -s 192.168.1.103 -j ACCEPT"
   - "iptables -A INPUT -p udp --dport 3389 -s 192.168.1.103 -j ACCEPT"
+
+firewall_disable_ufw: false
 
 # TODO: Possibly forward 443 and 80 so we can browse to here from the Mac
 # for testing.

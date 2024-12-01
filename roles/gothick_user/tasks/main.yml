@@ -6,6 +6,7 @@
     groups: sudo
     append: true
     create_home: true
+    shell: /usr/bin/zsh
 
 - name: Add user to passwordless sudoers
   ansible.builtin.template:

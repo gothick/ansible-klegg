@@ -12,3 +12,11 @@
     name: aptitude
     update_cache: true
     cache_valid_time: 3600
+
+- name: Install very basics
+  ansible.builtin.apt:
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    name:
+      - zsh
