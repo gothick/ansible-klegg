@@ -5,6 +5,22 @@ firewall_allowed_tcp_ports:
   - "443"
   - "8080"
   - "4443"
+  - "139" # Samba
+  - "445" # Samba
+
+  # - "32400" # (access to the Plex Media Server) [required]
+  # - "8324" # (controlling Plex for Roku via Plex Companion)
+  # - "32469" #  (access to the Plex DLNA Server)
+
+firewall_allowed_udp_ports:
+  - "137" # Samba
+  - "138" # Samba
+#   - "1900" # (access to the Plex DLNA Server)
+#   - "5353" # (older Bonjour/Avahi network discovery)
+#   - "32410" # (current GDM network discovery)
+#   - "32412" # (current GDM network discovery)
+#   - "32413" # (current GDM network discovery)
+#   - "32414" # (current GDM network discovery)
 
 firewall_forwarded_tcp_ports:
   - { src: "80", dest: "8080" }

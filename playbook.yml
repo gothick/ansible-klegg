@@ -26,5 +26,11 @@
 - name: Configure postfix
   import_playbook: playbooks/postfix/main.yml
 
+# - name: Install plex
+#  import_playbook: playbooks/plex/main.yml
+
+- name: Install samba
+  import_playbook: playbooks/samba/main.yml
+
 - name: Set up firewall
   import_playbook: playbooks/firewall/main.yml

@@ -7,6 +7,11 @@
     append: true
     create_home: true
     shell: /usr/bin/zsh
+  register: user_result
+
+- name: Set home fact
+  ansible.builtin.set_fact:
+    gothick_user_home: "{{ user_result.home }}"
 
 - name: Add user to passwordless sudoers
   ansible.builtin.template:
@@ -20,3 +25,11 @@
     state: present
     key: "{{ item }}"
   loop: "{{ gothick_user_authorised_keys }}"
+
+- name: Copy a default zshrc template
+  ansible.builtin.template:
+    src: zshrc.j2
+    dest: "{{ gothick_user_home }}/.zshrc"
+    owner: "{{ gothick_user_name }}"
+    group: "{{ gothick_user_name }}"
+    mode: "0644"

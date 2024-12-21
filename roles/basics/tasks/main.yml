@@ -4,6 +4,7 @@
 - name: Update apt packages
   ansible.builtin.apt:
     upgrade: true
+    state: latest # I know the linter will complain, but I do NOT care. Let's have the latest, please.
     update_cache: true
     cache_valid_time: 3600
 
