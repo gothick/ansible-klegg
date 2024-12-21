@@ -10,6 +10,7 @@ setopt histignorealldups sharehistory
 bindkey -e
 
 # Remember ssh key passphrases
+eval "$(ssh-agent -s)"
 plugins=(git ssh-agent)
 
 # Keep 1000 lines of history within the shell and save it to ~/.zsh_history:
