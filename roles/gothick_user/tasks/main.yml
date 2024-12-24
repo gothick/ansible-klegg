@@ -13,6 +13,14 @@
   ansible.builtin.set_fact:
     gothick_user_home: "{{ user_result.home }}"
 
+- name: Create .ssh directory
+  ansible.builtin.file:
+    state: directory
+    path: "{{ gothick_user_home }}/.ssh"
+    owner: "{{ gothick_user_name }}"
+    group: "{{ gothick_user_name }}"
+    mode: "0700"
+
 - name: Add user to passwordless sudoers
   ansible.builtin.template:
     src: sudoers.j2
@@ -25,6 +33,13 @@
     state: present
     key: "{{ item }}"
   loop: "{{ gothick_user_authorised_keys }}"
+
+- name: Generate ssh key for use with github
+  community.crypto.openssh_keypair:
+    path: "{{ gothick_user_home }}/.ssh/id_ed25519"
+    type: ed25519
+    owner: "{{ gothick_user_name }}"
+    group: "{{ gothick_user_name }}"
 
 - name: Copy a default zshrc template
   ansible.builtin.template:

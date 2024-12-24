@@ -32,6 +32,3 @@ firewall_additional_rules:
   - "iptables -A INPUT -p udp --dport 3389 -s 192.168.1.103 -j ACCEPT"
 
 firewall_disable_ufw: false
-
-# TODO: Possibly forward 443 and 80 so we can browse to here from the Mac
-# for testing.
