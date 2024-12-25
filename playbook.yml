@@ -34,3 +34,6 @@
 
 - name: Set up firewall
   import_playbook: playbooks/firewall/main.yml
+
+- name: Install VS Code
+  import_playbook: playbooks/vscode/main.yml
