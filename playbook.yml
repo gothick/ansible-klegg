@@ -12,6 +12,7 @@
     - basics
     - ansible_user
     - gothick_user
+    - gothick.ghostty
     - ssh_lockdown
     - useful_tools
     - gothick.awscli
