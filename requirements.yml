@@ -8,10 +8,13 @@ roles:
     src: https://github.com/gothick/ansible-ghostty.git
 
   - name: Oefenweb.postfix
-    version: v3.6.4
+    version: "v3.6.4"
 
   - name: geerlingguy.pip
-    version: 3.0.3
+    version: "3.0.3"
 
   - name: geerlingguy.firewall
-    version: 2.5.1
+    version: "2.5.1"
+
+  - name: geerlingguy.jenkins
+    version: "5.3.0"
