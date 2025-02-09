@@ -1,0 +1,12 @@
+---
+- name: Set up Jenkins
+  hosts: all
+  become: true
+
+  vars_files:
+    - jenkins_vault.yml
+    - vars.yml
+
+  roles:
+    - geerlingguy.java
+    - geerlingguy.jenkins

@@ -38,3 +38,6 @@
 
 - name: Install VS Code
   import_playbook: playbooks/vscode/main.yml
+
+- name: Install Jenkins
+  import_playbook: playbooks/jenkins/main.yml

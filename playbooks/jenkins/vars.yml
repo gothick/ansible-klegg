@@ -1,0 +1,8 @@
+---
+java_packages:
+  - openjdk-17-jdk
+
+jenkins_http_port: 8080
+jenkins_admin_username: "{{ jenkins_admin_username_secret }}"
+jenkins_admin_password: "{{ jenkins_admin_password_secret }}"
+jenkins_hostname: klegg

@@ -3,7 +3,7 @@ firewall_allowed_tcp_ports:
   - "22"
   - "80"
   - "443"
-  - "8080"
+  - "8080" # Jenkins
   - "4443"
   - "139" # Samba
   - "445" # Samba
