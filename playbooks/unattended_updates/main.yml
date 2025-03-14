@@ -1,0 +1,10 @@
+---
+- name: Set up unattended updates
+  hosts: all
+  become: true
+
+  vars_files:
+    - vars.yml
+
+  roles:
+    - hifis.toolkit.unattended_upgrades
