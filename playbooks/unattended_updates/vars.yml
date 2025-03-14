@@ -1,0 +1,12 @@
+---
+unattended_mail: '{{ admin_email }}'
+
+unattended_origins_patterns:
+  - 'origin=Ubuntu,archive=${distro_codename}-security'
+  - 'o=Ubuntu,a=${distro_codename}'
+  - 'o=Ubuntu,a=${distro_codename}-updates'
+
+unattended_automatic_reboot: true
+unattended_automatic_reboot_time: '02:00'
+unattended_mail_report: on-change
+# unattended_update_days: '{"Mon", "Fri"}'

@@ -41,3 +41,6 @@
 
 - name: Install Jenkins
   import_playbook: playbooks/jenkins/main.yml
+
+- name: Configure automatic updates
+  import_playbook: playbooks/unattended_updates/main.yml
