@@ -1,11 +1,26 @@
 ---
-- name: Add Vagrant Key
-  ansible.builtin.apt_key:
-    url: https://apt.releases.hashicorp.com/gpg
 
-- name: Add Vagrant Repository
-  ansible.builtin.apt_repository:
-    repo: deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
+- name: Add Hashicorp Stable APT repository
+  ansible.builtin.deb822_repository:
+    name: hashicorp
+    types: [deb]
+    uris: "https://apt.releases.hashicorp.com"
+    signed_by: "https://apt.releases.hashicorp.com/gpg"
+    suites: ["{{ ansible_distribution_release|lower }}"]
+    components: [main]
+    state: present
+    enabled: yes
+
+# Old-school version that ended up with these stored in /etc/apt/trusted.gpg,
+# which is deprecated and will be removed in the future.
+#
+# - name: Add Vagrant Key
+#   ansible.builtin.apt_key:
+#     url: https://apt.releases.hashicorp.com/gpg
+
+# - name: Add Vagrant Repository
+#   ansible.builtin.apt_repository:
+#     repo: deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
 
 - name: Install Vagrant
   ansible.builtin.apt:
