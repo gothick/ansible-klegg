@@ -22,6 +22,18 @@
 #   ansible.builtin.apt_repository:
 #     repo: deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
 
+# Because of an annoying conflict with Vagrant https://superuser.com/questions/1845776/virtualbox-cant-operate-in-vmx-mode
+- name: Blacklist KVM kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/blacklist-kvm.conf
+    content: |
+      blacklist kvm
+      blacklist kvm_intel
+      blacklist kvm_amd
+    owner: root
+    group: root
+    mode: '0644'
+
 - name: Install Vagrant
   ansible.builtin.apt:
     state: present
