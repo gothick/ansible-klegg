@@ -50,12 +50,12 @@
     mode: "0644"
 
 - name: Configure git
-  ansible.community.general.git_config:
+  ansible.builtin.git_config:
     scope: global
     name: "{{ item.key }}"
     value: "{{ item.value }}"
-    become: true
-    become_user: "{{ gothick_user_name }}"
-    loop:
-      - { key: 'user.name', value: "{{ gothick_user_git_info.name }}" }
-      - { key: 'user.email', value: "{{ gothick_user_git_info.email }}" }
+  become: true
+  become_user: "{{ gothick_user_name }}"
+  loop:
+    - { key: 'user.name', value: "{{ gothick_user_git_info.name }}" }
+    - { key: 'user.email', value: "{{ gothick_user_git_info.email }}" }

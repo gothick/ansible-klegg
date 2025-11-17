@@ -7,4 +7,4 @@ gothick_user_authorised_keys:
   - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK/Sog14pNyzWTBXE0sE12Y4PbCtFlTtc+GsjPTxN2eG gothick@chromebook"
 gothick_user_git_info:
   name: "Matt Gibson"
-  email: "gothick@example.com"
+  email: "gothick@gothick.org.uk"
