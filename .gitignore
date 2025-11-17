@@ -1,3 +1,5 @@
+.ansible
+
 # build products...
 *.py[co]
 build
