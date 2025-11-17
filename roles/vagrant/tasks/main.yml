@@ -23,6 +23,7 @@
 #     repo: deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
 
 # Because of an annoying conflict with Vagrant https://superuser.com/questions/1845776/virtualbox-cant-operate-in-vmx-mode
+# This is fixed in VirtualBox 7.2.2 and when that's available in the Ubuntu repos we can remove this again.
 - name: Blacklist KVM kernel modules
   ansible.builtin.copy:
     dest: /etc/modprobe.d/blacklist-kvm.conf
