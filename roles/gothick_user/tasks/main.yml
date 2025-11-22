@@ -41,6 +41,18 @@
     owner: "{{ gothick_user_name }}"
     group: "{{ gothick_user_name }}"
 
+- name: Install oh-my-zsh
+  ansible.builtin.shell: |
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  become: true
+  become_user: "{{ gothick_user_name }}"
+  args:
+    creates: "{{ gothick_user_home }}/.oh-my-zsh"
+    # Ironically, it's better to install with a simple shell that's
+    # not going to do smartarse checking to see if your environment's
+    # set up and sit there asking stupid questions about it.
+    executable: /bin/sh
+
 - name: Copy a default zshrc template
   ansible.builtin.template:
     src: zshrc.j2
