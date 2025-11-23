@@ -7,11 +7,11 @@
     append: true
     create_home: true
     shell: /usr/bin/zsh
-  register: user_result
+  register: gothick_user_result
 
 - name: Set home fact
   ansible.builtin.set_fact:
-    gothick_user_home: "{{ user_result.home }}"
+    gothick_user_home: "{{ gothick_user_result.home }}"
 
 - name: Create .ssh directory
   ansible.builtin.file:

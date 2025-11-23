@@ -2,7 +2,11 @@
 gothick_user_name: gothick
 gothick_user_authorised_keys:
   # iMac
-  - "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAvtw+vW1Btsof11hYsDuHyVJx8kFk3nFnRG+IoDnKcGd8KvRvr1j1eQiiGBC3qm7jffvy7+VbLWjlBNfWRjLaMlQ2LYhopptmd2reCnVU9i7c8bBr58NSZxQpTYQmTU0GWWhrU8IrkEgQQDOOyLEzbaf735vJX89+7AjUVtf/juMmHIVZ5rAFAErxgASKs+R9GzCVhvKTCWq+ODEC3DlC/i42ngOetKWc/kF5kjlnvjd4zQvsekC2MzkHIoJVmTc8lNdKx8Hw5YaYrwCFOaz3oRQVvcaoUGYmwoEUwc0aSYB2WwVXezHcGz89SvLcp646hFk5hqkPMhGysyaCTz/2fQ== matt@matt-gibsons-computer.local"
+  - "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAvtw+vW1Btsof11hYsDuHyVJx8kFk3nFnRG+IoDnKcGd8KvRvr1j1eQiiGBC3q\
+     m7jffvy7+VbLWjlBNfWRjLaMlQ2LYhopptmd2reCnVU9i7c8bBr58NSZxQpTYQmTU0GWWhrU8IrkEgQQDOOyLEzbaf735vJX8\
+     9+7AjUVtf/juMmHIVZ5rAFAErxgASKs+R9GzCVhvKTCWq+ODEC3DlC/i42ngOetKWc/kF5kjlnvjd4zQvsekC2MzkHIoJVmTc\
+     8lNdKx8Hw5YaYrwCFOaz3oRQVvcaoUGYmwoEUwc0aSYB2WwVXezHcGz89SvLcp646hFk5hqkPMhGysyaCTz/2fQ==
+     matt@matt-gibsons-computer.local"
   # Chromebook
   - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK/Sog14pNyzWTBXE0sE12Y4PbCtFlTtc+GsjPTxN2eG gothick@chromebook"
 gothick_user_git_info:
