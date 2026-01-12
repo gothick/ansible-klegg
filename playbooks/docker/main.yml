@@ -1,0 +1,11 @@
+---
+- name: Set up Docker
+  hosts: all
+  become: true
+
+  vars_files:
+    - vars.yml
+
+  roles:
+    - geerlingguy.docker
+    - geerlingguy.pip
