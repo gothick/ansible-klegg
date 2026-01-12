@@ -47,3 +47,6 @@
 
 - name: Install Docker
   import_playbook: playbooks/docker/main.yml
+
+- name: Install Uptime Kuma Docker container
+  import_playbook: playbooks/uptime-kuma/main.yml

@@ -1,0 +1,44 @@
+---
+- name: Set up uptime-kuma Docker container
+  hosts: all
+  become: true
+  collections:
+    - community.docker
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Create uptime-kuma user if it doesn't exist
+      ansible.builtin.user:
+        name: uptime-kuma
+        state: present
+        create_home: false
+
+    - name: Ensure /opt/uptime-kuma exists
+      ansible.builtin.file:
+        path: /opt/uptime-kuma
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Pull uptime-kuma image from Docker Hub
+      community.docker.docker_image:
+        name: louislam/uptime-kuma
+        tag: latest
+        source: pull
+
+    - name: Start container
+      community.docker.docker_container:
+        state: started
+        # recreate: true
+        ports:
+          - "3001:3001"
+        volumes:
+          - /opt/uptime-kuma/data:/app/data
+        restart_policy: unless-stopped
+        detach: true
+        network_mode: bridge
+        image: louislam/uptime-kuma:latest
+        name: uptime_kuma

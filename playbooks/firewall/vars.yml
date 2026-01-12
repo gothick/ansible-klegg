@@ -7,6 +7,7 @@ firewall_allowed_tcp_ports:
   - "4443"
   - "139" # Samba
   - "445" # Samba
+  - "3001" # Uptime-Kuma
 
   # - "32400" # (access to the Plex Media Server) [required]
   # - "8324" # (controlling Plex for Roku via Plex Companion)
@@ -30,5 +31,7 @@ firewall_additional_rules:
   # Allow remote desktop from iMac
   - "iptables -A INPUT -p tcp --dport 3389 -s 192.168.1.103 -j ACCEPT"
   - "iptables -A INPUT -p udp --dport 3389 -s 192.168.1.103 -j ACCEPT"
-
+  # Allow Docker container traffic
+  - "iptables -A FORWARD -i docker0 -o eth0 -j ACCEPT"
+  - "iptables -A FORWARD -i eth0 -o docker0 -m state --state RELATED,ESTABLISHED -j ACCEPT"
 firewall_disable_ufw: false
