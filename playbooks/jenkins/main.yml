@@ -9,4 +9,6 @@
 
   roles:
     - geerlingguy.java
-    - geerlingguy.jenkins
+    - role: geerlingguy.jenkins
+      # environment:
+      #   ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "True"
