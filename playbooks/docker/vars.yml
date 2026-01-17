@@ -1,0 +1,13 @@
+---
+# Might come in handy.
+docker_install_compose: true
+docker_packages_state: latest
+
+docker_daemon_options:
+  bridge: "none"
+
+docker_users:
+  - "{{ gothick_user_name }}"
+
+pip_install_packages:
+  - name: docker

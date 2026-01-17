@@ -33,14 +33,22 @@
 - name: Install samba
   import_playbook: playbooks/samba/main.yml
 
-- name: Set up firewall
-  import_playbook: playbooks/firewall/main.yml
-
 - name: Install VS Code
   import_playbook: playbooks/vscode/main.yml
 
 # - name: Install Jenkins
-#  import_playbook: playbooks/jenkins/main.yml
+#   import_playbook: playbooks/jenkins/main.yml
 
 - name: Configure automatic updates
   import_playbook: playbooks/unattended_updates/main.yml
+
+- name: Install Docker
+  import_playbook: playbooks/docker/main.yml
+
+- name: Install Uptime Kuma Docker container
+  import_playbook: playbooks/uptime-kuma/main.yml
+
+# Needs to be after Docker & Docker Containers as we
+# want to allow the relevant ports in the firewall
+- name: Set up firewall
+  import_playbook: playbooks/firewall/main.yml
