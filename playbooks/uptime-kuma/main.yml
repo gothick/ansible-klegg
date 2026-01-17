@@ -29,6 +29,12 @@
         tag: latest
         source: pull
 
+    - name: Create our Docker network
+      community.docker.docker_network:
+        name: uptime-kuma-net
+        state: present
+      # register: network_result
+
     - name: Start container
       community.docker.docker_container:
         state: started
@@ -39,6 +45,10 @@
           - /opt/uptime-kuma/data:/app/data
         restart_policy: unless-stopped
         detach: true
-        network_mode: bridge
+        networks:
+          - name: uptime-kuma-net
+        # Make sure the container can connect to the internet
+        dns_servers:
+          - "192.168.1.254"
         image: louislam/uptime-kuma:latest
         name: uptime_kuma

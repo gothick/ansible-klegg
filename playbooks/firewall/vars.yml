@@ -23,15 +23,24 @@ firewall_allowed_udp_ports:
 #   - "32413" # (current GDM network discovery)
 #   - "32414" # (current GDM network discovery)
 
-firewall_forwarded_tcp_ports:
-  - { src: "80", dest: "8080" }
-  - { src: "443", dest: "4443" }
+# I've forwarded these manually below as the firewall role doesn't
+# limit the port forwarding to specific interfaces, thus screwing up
+# access from Docker containers to the outside world. Below I use
+# dst-type LOCAL to exclude the Docker interfaces.
+#firewall_forwarded_tcp_ports:
+#  - { src: "80", dest: "8080" }
+# - { src: "443", dest: "4443" }
 
-firewall_additional_rules:
-  # Allow remote desktop from iMac
+static_rules:
   - "iptables -A INPUT -p tcp --dport 3389 -s 192.168.1.103 -j ACCEPT"
   - "iptables -A INPUT -p udp --dport 3389 -s 192.168.1.103 -j ACCEPT"
-  # Allow Docker container traffic
-  - "iptables -A FORWARD -i docker0 -o eth0 -j ACCEPT"
-  - "iptables -A FORWARD -i eth0 -o docker0 -m state --state RELATED,ESTABLISHED -j ACCEPT"
-firewall_disable_ufw: false
+  - "iptables -t nat -A PREROUTING -p tcp -m addrtype --dst-type LOCAL --dport 80 -j REDIRECT --to-port 8080"
+  - "iptables -t nat -I OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port 8080"
+  - "iptables -t nat -A PREROUTING -p tcp -m addrtype --dst-type LOCAL --dport 443 -j REDIRECT --to-port 4443"
+  - "iptables -t nat -I OUTPUT -p tcp -o lo --dport 443 -j REDIRECT --to-port 4443"
+
+# UFW doesn't seem to be enabled by default anyway, but better safe than sorry.
+firewall_disable_ufw: true
+
+# TODO This is just for testing. Remove later.
+# firewall_log_dropped_packets: true
