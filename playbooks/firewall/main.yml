@@ -19,8 +19,8 @@
     - name: Set firewall dynamic rules facts for uptime-kuma if we need to
       ansible.builtin.set_fact:
         firewall_uptime_kuma_rules:
-          - "iptables -A FORWARD -i {{ uptime_kuma_adapter_name }} -o enp1s0 -j ACCEPT"
-          - "iptables -A FORWARD -i enp1s0 -o {{ uptime_kuma_adapter_name }} -m state --state RELATED,ESTABLISHED -j ACCEPT"
+          - "iptables -A FORWARD -i {{ uptime_kuma_adapter_name }} -o {{ ansible_default_ipv4.interface }} -j ACCEPT"
+          - "iptables -A FORWARD -i {{ ansible_default_ipv4.interface }} -o {{ uptime_kuma_adapter_name }} -m state --state RELATED,ESTABLISHED -j ACCEPT"
       when: uptime_kuma_adapter_name is defined and uptime_kuma_adapter_name != none
 
     - name: Set firewall rules including dynamic rules if defined
