@@ -17,6 +17,7 @@
         types: deb
         uris: "{{ jenkins_stable_url }}"
         suites: 'binary/'
+        components: []
         signed_by: "{{ jenkins_apt_key_url }}"
         state: present
 
