@@ -9,6 +9,20 @@
 
   roles:
     - geerlingguy.java
-    - role: geerlingguy.jenkins
-      # environment:
-      #   ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "True"
+
+  tasks:
+    - name: Add Jenkins apt key
+      ansible.builtin.deb822_repository:
+        name: jenkins
+        types: deb
+        uris: "{{ jenkins_stable_url }}"
+        suites: 'binary/'
+        components: []
+        signed_by: "{{ jenkins_apt_key_url }}"
+        state: present
+
+    - name: Install Jenkins
+      ansible.builtin.apt:
+        name: jenkins
+        state: present
+        update_cache: true

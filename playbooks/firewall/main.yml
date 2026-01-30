@@ -25,6 +25,8 @@
 
     - name: Set firewall rules including dynamic rules if defined
       ansible.builtin.set_fact:
+        # TODO: Could improve this with merge_variables. See
+        # https://docs.ansible.com/projects/ansible/latest/collections/community/general/merge_variables_lookup.html
         firewall_additional_rules: "{{ static_rules + firewall_uptime_kuma_rules | default([]) }}"
 
     - name: debug firewall additional rules
