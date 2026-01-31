@@ -1,6 +1,8 @@
 ---
-java_packages:
-  - openjdk-17-jdk
+# If you don't specify java_packages, the standard Ubuntu version gets installed by
+# default, which is exactly what we want here.
+# java_packages:
+#   - openjdk-21-jdk
 
 jenkins_apt_key_url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
 jenkins_stable_url: https://pkg.jenkins.io/debian-stable
