@@ -1,0 +1,24 @@
+---
+- name: Set up Virtualbox
+  hosts: all
+  become: true
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Add Virtualbox repo
+      ansible.builtin.deb822_repository:
+        name: virtualbox
+        types: deb
+        uris: "{{ virtualbox_apt_url }}"
+        suites: "{{ virtualbox_apt_suite }}"
+        components: "{{ virtualbox_apt_components }}"
+        signed_by: "{{ virtualbox_apt_key_url }}"
+        state: present
+
+    - name: Install Virtualbox
+      ansible.builtin.apt:
+        name: virtualbox-{{ virtualbox_version }}
+        state: present
+        update_cache: true

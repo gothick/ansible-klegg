@@ -16,7 +16,6 @@
     - ssh_lockdown
     - useful_tools
     - gothick.awscli
-    - virtualbox
     - geerlingguy.pip
     - vagrant
     - ansible
@@ -41,6 +40,9 @@
 
 - name: Configure automatic updates
   import_playbook: playbooks/unattended_updates/main.yml
+
+- name: Install VirtualBox and Guest Additions
+  import_playbook: playbooks/virtualbox/main.yml
 
 - name: Install Docker
   import_playbook: playbooks/docker/main.yml
