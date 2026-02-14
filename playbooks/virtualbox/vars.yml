@@ -1,0 +1,7 @@
+---
+virtualbox_apt_key_url: "https://www.virtualbox.org/download/oracle_vbox_2016.asc"
+virtualbox_apt_url: "https://download.virtualbox.org/virtualbox/debian"
+virtualbox_apt_suite: "noble"
+virtualbox_apt_components:
+    - "contrib"
+virtualbox_version: "7.2"
