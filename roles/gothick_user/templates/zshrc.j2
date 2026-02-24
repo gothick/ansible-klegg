@@ -14,7 +14,10 @@ ZSH_THEME="fishy"
 
 autoload -Uz promptinit
 promptinit
-prompt bart
+
+if [ command -v fzf >/dev/null 2>&1 ]; then
+    eval "$(fzf --zsh)"
+fi
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
