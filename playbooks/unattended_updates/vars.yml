@@ -10,3 +10,4 @@ unattended_automatic_reboot: true
 unattended_automatic_reboot_time: '02:00'
 unattended_mail_report: on-change
 # unattended_update_days: '{"Mon", "Fri"}'
+unattended_mail_sender: "klegg-unattended-updates@gothick.org.uk"
