@@ -2,6 +2,23 @@ postfix_hostname: "klegg.gothick.org.uk"
 postfix_mailname: "gothick.org.uk"
 # postfix_aliases: []
 # postfix_virtual_aliases: []
+
+# NB: /etc/aliases is effectively inert on this host. myorigin is
+# postfix_mailname (gothick.org.uk), which is NOT in mydestination -- that
+# only lists postfix_hostname (klegg.gothick.org.uk) and the localhost
+# variants. So mail to a bare local user such as 'root' gets qualified to
+# root@gothick.org.uk, judged non-local, and relayed to Fastmail rather than
+# delivered locally, which means the aliases table is never consulted.
+# Sender rewriting is therefore the right lever for tagging this host's mail.
+#
+# This puts general system mail (cron, smartd, the apt repo check, anything
+# else that mails root) on the same naming convention as the
+# klegg-unattended-updates@ address used by playbooks/unattended_updates, so
+# it can be told apart from any other machine that mails root.
+postfix_sender_canonical_maps:
+  - sender: root
+    rewrite: "{{ postfix_hostname.split('.')[0] }}-root@{{ postfix_mailname }}"
+
 postfix_relayhost: 'smtp.fastmail.com'
 postfix_relayhost_port: 587
 postfix_relaytls: true
