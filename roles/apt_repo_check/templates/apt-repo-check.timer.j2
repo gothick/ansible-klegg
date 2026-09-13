@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Periodic apt repository health check
+
+[Timer]
+OnCalendar={{ apt_repo_check_oncalendar }}
+RandomizedDelaySec={{ apt_repo_check_randomized_delay }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

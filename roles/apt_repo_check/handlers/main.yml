@@ -1,0 +1,9 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Restart apt repo check timer
+  ansible.builtin.systemd_service:
+    name: apt-repo-check.timer
+    state: restarted

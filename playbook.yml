@@ -20,6 +20,7 @@
     - vagrant
     - ansible
     - ssh_lockdown
+    - apt_repo_check
 
   tasks:
 

@@ -1,0 +1,81 @@
+#!/bin/sh
+#
+# {{ ansible_managed }}
+#
+# Why this exists:
+#
+# "apt-get update" exits 0 even when a repository fails to fetch or fails
+# signature verification. It prints "Err:" lines, warns that some index
+# files failed to download, and then carries on using the stale index it
+# already has. Nothing else on this machine notices:
+#
+#   * apt-daily.service therefore "succeeds", so there is no systemd
+#     failure state for an OnFailure= hook to catch.
+#   * /usr/lib/apt/apt.systemd.daily contains no mail invocation at all.
+#     The "send report mail to root" option in its own documentation is a
+#     leftover from the cron.daily era; under systemd the output goes to
+#     the journal, and at the default verbosity it is redirected to
+#     /dev/null before it even gets there.
+#   * unattended-upgrades only considers the origins listed in
+#     unattended_origins_patterns (Ubuntu only, on this host), so a broken
+#     third-party repository never appears in its mail report either.
+#
+# The upshot is that a repository can quietly stop receiving updates for
+# months. This runs the update itself and complains when it should.
+
+set -u
+
+RECIPIENT="{{ apt_repo_check_recipient }}"
+MAX_ATTEMPTS={{ apt_repo_check_max_attempts }}
+RETRY_DELAY={{ apt_repo_check_retry_delay }}
+LOCK_TIMEOUT={{ apt_repo_check_lock_timeout }}
+
+HOST="$(hostname -f 2>/dev/null || hostname)"
+
+notify() {
+    if command -v mail >/dev/null 2>&1; then
+        printf '%s\n' "$2" | mail -s "$1" "$RECIPIENT"
+    else
+        # No mail client installed. Make it visible in the journal instead;
+        # the non-zero exit below also surfaces it in "systemctl --failed".
+        printf 'apt-repo-check: %s\n\n%s\n' "$1" "$2" >&2
+    fi
+}
+
+attempt=1
+while : ; do
+    output="$(apt-get -o DPkg::Lock::Timeout="$LOCK_TIMEOUT" update 2>&1)"
+    rc=$?
+    [ "$rc" -eq 0 ] && break
+    [ "$attempt" -ge "$MAX_ATTEMPTS" ] && break
+    attempt=$((attempt + 1))
+    sleep "$RETRY_DELAY"
+done
+
+if [ "$rc" -ne 0 ]; then
+    notify "apt-get update failed on ${HOST}" "apt-get update exited with status ${rc}, after ${attempt} attempt(s).
+
+That is an apt-level failure rather than one bad repository: a lock held
+too long, no network, or a broken apt configuration.
+
+Full output follows.
+
+${output}"
+    exit 1
+fi
+
+if printf '%s\n' "$output" | grep -qE '^(Err:|W: Some index files failed to download)'; then
+    notify "apt repository problem on ${HOST}" "apt-get update completed, but at least one repository could not be
+fetched or verified. apt has carried on using the stale index it already
+had, so packages from that repository will quietly stop being updated
+until this is dealt with.
+
+A common cause is the upstream rotating its signing key.
+
+Full output follows.
+
+${output}"
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,21 @@
+---
+# Who gets told when a repository breaks. Left as the local "root" on
+# purpose: postfix on this host relays root's mail out to Fastmail, and
+# postfix_sender_canonical_maps rewrites the sender so it arrives tagged
+# with the hostname. Keeping the recipient as root means the mail routing
+# stays configured in exactly one place.
+apt_repo_check_recipient: root
+
+apt_repo_check_script: /usr/local/sbin/apt-repo-check
+
+# How often to check, and how far to smear the start time so this doesn't
+# collide with apt-daily every single day.
+apt_repo_check_oncalendar: daily
+apt_repo_check_randomized_delay: 1h
+
+# apt-get update can collide with apt-daily's lock. Wait this many seconds
+# for it, and retry the whole thing this many times before giving up and
+# reporting an apt-level failure.
+apt_repo_check_lock_timeout: 300
+apt_repo_check_max_attempts: 3
+apt_repo_check_retry_delay: 60
