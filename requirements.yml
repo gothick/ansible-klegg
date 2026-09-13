@@ -23,3 +23,19 @@ roles:
 collections:
   - name: hifis.toolkit
     version: "5.3.0"
+
+  # Used directly by our own roles/playbooks (docker_container, docker_network,
+  # snap, openssh_keypair, authorized_key) but never previously declared here --
+  # this only ever worked because the apt "ansible" package (installed by
+  # roles/ansible) happens to bundle compatible versions. Pin them properly.
+  - name: community.docker
+    version: "5.3.0"
+
+  - name: community.general
+    version: "13.4.0"
+
+  - name: community.crypto
+    version: "3.4.0"
+
+  - name: ansible.posix
+    version: "2.2.2"
