@@ -1,12 +1,45 @@
 ---
 
-# TODO: Maybe only run this once, the very first time.
-- name: Update apt packages
+# The full upgrade only needs to happen once, when provisioning a bare image.
+# From the first run onwards, playbooks/unattended_updates has automatic
+# updates configured and running, so repeating a dist-upgrade on every
+# playbook run buys nothing -- and risks dragging in a new kernel or
+# VirtualBox module halfway through provisioning. The marker file records
+# that it has been done; delete it to force it again.
+- name: Check whether the initial provisioning upgrade has already run
+  ansible.builtin.stat:
+    path: "{{ basics_initial_upgrade_marker }}"
+  register: basics_initial_upgrade
+
+- name: Bring a bare image fully up to date (first provisioning run only)
   ansible.builtin.apt:
-    upgrade: true
-    state: latest # I know the linter will complain, but I do NOT care. Let's have the latest, please.
+    upgrade: dist
     update_cache: true
-    cache_valid_time: 3600
+  when: not basics_initial_upgrade.stat.exists
+
+- name: Ensure the marker directory exists
+  ansible.builtin.file:
+    path: "{{ basics_initial_upgrade_marker | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: not basics_initial_upgrade.stat.exists
+
+- name: Record that the initial upgrade has been done
+  ansible.builtin.copy:
+    content: |
+      Initial dist-upgrade performed by the ansible-klegg 'basics' role
+      on {{ ansible_facts['date_time']['iso8601'] }}.
+
+      Routine updates are handled by unattended-upgrades. Delete this file
+      to make the 'basics' role perform a full dist-upgrade again on the
+      next playbook run.
+    dest: "{{ basics_initial_upgrade_marker }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: not basics_initial_upgrade.stat.exists
 
 - name: Install aptitude
   ansible.builtin.apt:

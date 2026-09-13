@@ -1,0 +1,5 @@
+---
+# Marker file recording that the one-off "bring a bare image fully up to date"
+# dist-upgrade has already been performed on this host. Delete it to force that
+# upgrade to happen again on the next playbook run.
+basics_initial_upgrade_marker: /var/lib/ansible-klegg/initial-upgrade-done
