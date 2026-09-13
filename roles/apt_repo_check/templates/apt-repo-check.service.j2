@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Check that apt repositories are reachable and correctly signed
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart={{ apt_repo_check_script }}
