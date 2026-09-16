@@ -6,6 +6,7 @@
   pre_tasks:
 
   roles:
+    - apt_repos
     - basics
     - ansible_user
     - gothick_user

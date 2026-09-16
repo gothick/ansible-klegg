@@ -1,0 +1,38 @@
+---
+# Canonical connection details for every third-party apt repository this
+# host uses: docker, virtualbox, hashicorp (vagrant) and jenkins.
+#
+# Read by roles/apt_repos, which asserts all four -- and refreshes the apt
+# cache -- before anything else touches it (see that role for why), and
+# read again by the playbooks/roles that actually install each piece of
+# software. One canonical set of values means there's nothing to drift.
+#
+# signed_by is a URL in every case: whatever key that URL serves is
+# trusted on every run (trust-on-first-use, re-established each time).
+# See audit-findings.md for the follow-up to pin expected fingerprints
+# instead.
+
+hashicorp_apt_url: "https://apt.releases.hashicorp.com"
+hashicorp_apt_key_url: "https://apt.releases.hashicorp.com/gpg"
+
+virtualbox_apt_url: "https://download.virtualbox.org/virtualbox/debian"
+virtualbox_apt_suite: "noble"
+virtualbox_apt_components:
+  - "contrib"
+virtualbox_apt_key_url: "https://www.virtualbox.org/download/oracle_vbox_2016.asc"
+
+jenkins_stable_url: "https://pkg.jenkins.io/debian-stable"
+# Jenkins rotates this filename yearly -- see audit-findings.md.
+jenkins_apt_key_url: "https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key"
+
+# Mirrors roles/geerlingguy.docker/defaults/main.yml. Defined here, ahead of
+# that role's own defaults, purely so apt_repos can assert Docker's repo
+# before basics' first cache refresh runs. Group vars beat role defaults,
+# so geerlingguy.docker picks these same values back up later -- if that
+# role's upstream ever changes them (repo layout, key location), update
+# them here too.
+docker_repo_url: "https://download.docker.com/linux"
+docker_apt_release_channel: stable
+docker_apt_ansible_distribution: "{{ 'ubuntu' if ansible_facts.distribution in ['Pop!_OS', 'Linux Mint'] else ansible_facts.distribution }}"
+docker_apt_gpg_key: "{{ docker_repo_url }}/{{ docker_apt_ansible_distribution | lower }}/gpg"
+docker_apt_filename: "docker"

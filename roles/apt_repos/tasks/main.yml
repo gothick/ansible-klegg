@@ -1,0 +1,71 @@
+---
+# Runs first in playbook.yml, before basics or anything else touches the
+# apt cache.
+#
+# Previously the first apt task to run at all -- basics' first-run
+# dist-upgrade, or "Install aptitude" on every run after that -- ran
+# before any of the roles/playbooks that actually own the docker,
+# virtualbox, hashicorp or jenkins repos had a chance to re-assert their
+# key and source for this run. So one stale or rotated key on any of the
+# four halted the entire play immediately, long before it ever reached
+# the place that would have refreshed it.
+#
+# Fix: assert all four up front, then force a fresh cache refresh. A
+# broken repo now fails here -- loudly, against the repo actually
+# responsible -- instead of opaquely inside basics.
+#
+# Each repo is asserted exactly once per play, here, and nowhere else in
+# our own code (docker/vars.yml, jenkins/vars.yml and vagrant's own task
+# used to duplicate this; they were pared back for the reason below).
+# Don't re-add a second deb822_repository call for the same repo
+# elsewhere: doing so previously triggered
+# https://github.com/ansible/ansible/issues/82454 -- the `deb822` library
+# underneath this module orders a repo's fields inconsistently between
+# invocations, so two independent assertions of the same repo in one
+# play will periodically each see the other's ordering as a "change",
+# forever. geerlingguy.docker (vendored) still asserts its own repo a
+# second time later in the docker playbook; that's accepted as a known,
+# low-stakes residual instance of the same thing, since we don't patch
+# vendored roles.
+
+- name: Assert every third-party apt repository this host needs
+  ansible.builtin.deb822_repository:
+    name: "{{ item.name }}"
+    types: deb
+    uris: "{{ item.uris }}"
+    suites: "{{ item.suites }}"
+    components: "{{ item.components }}"
+    signed_by: "{{ item.signed_by }}"
+    state: present
+  loop:
+    - name: hashicorp
+      uris: "{{ hashicorp_apt_url }}"
+      suites: ["{{ ansible_facts.distribution_release | lower }}"]
+      components: [main]
+      signed_by: "{{ hashicorp_apt_key_url }}"
+      enabled: true
+    - name: virtualbox
+      uris: "{{ virtualbox_apt_url }}"
+      suites: "{{ virtualbox_apt_suite }}"
+      components: "{{ virtualbox_apt_components }}"
+      signed_by: "{{ virtualbox_apt_key_url }}"
+    - name: jenkins
+      uris: "{{ jenkins_stable_url }}"
+      suites: "binary/"
+      components: []
+      signed_by: "{{ jenkins_apt_key_url }}"
+    - name: "{{ docker_apt_filename }}"
+      uris: "{{ docker_repo_url }}/{{ docker_apt_ansible_distribution | lower }}"
+      suites: "{{ ansible_facts.distribution_release }}"
+      components: "{{ docker_apt_release_channel }}"
+      signed_by: "{{ docker_apt_gpg_key }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Refresh the apt cache now every repo is known-good
+  ansible.builtin.apt:
+    update_cache: true
+  # update_cache alone always reports changed when it actually runs
+  # apt-get update, whether or not the metadata differed -- a known quirk
+  # of the apt module, not a signal worth showing as "changed" here.
+  changed_when: false

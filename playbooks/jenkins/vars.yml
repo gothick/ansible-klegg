@@ -4,5 +4,9 @@
 # java_packages:
 #   - openjdk-21-jdk
 
-jenkins_apt_key_url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
-jenkins_stable_url: https://pkg.jenkins.io/debian-stable
+# Repo connection details (jenkins_stable_url, jenkins_apt_key_url) now
+# live in group_vars/all/apt_repos.yml, alongside the other three
+# third-party repos -- see roles/apt_repos. Nothing local left to define,
+# but keeping this file (rather than dropping it from jenkins/main.yml's
+# vars_files) means future jenkins-only vars have an obvious home.
+{}
