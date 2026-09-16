@@ -10,17 +10,13 @@
   roles:
     - geerlingguy.java
 
+  # The jenkins repo itself is asserted by roles/apt_repos, which always
+  # runs first in playbook.yml -- see that role, and
+  # group_vars/all/apt_repos.yml for the connection details. It used to
+  # also be re-asserted here; that redundant second assertion is exactly
+  # what triggers https://github.com/ansible/ansible/issues/82454 (see
+  # roles/vagrant/tasks/main.yml for the fuller story), so it's gone.
   tasks:
-    - name: Add Jenkins apt key
-      ansible.builtin.deb822_repository:
-        name: jenkins
-        types: deb
-        uris: "{{ jenkins_stable_url }}"
-        suites: 'binary/'
-        components: []
-        signed_by: "{{ jenkins_apt_key_url }}"
-        state: present
-
     - name: Install Jenkins
       ansible.builtin.apt:
         name: jenkins

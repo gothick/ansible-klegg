@@ -6,17 +6,13 @@
   vars_files:
     - vars.yml
 
+  # The virtualbox repo itself is asserted by roles/apt_repos, which
+  # always runs first in playbook.yml -- see that role, and
+  # group_vars/all/apt_repos.yml for the connection details. It used to
+  # also be re-asserted here; that redundant second assertion is exactly
+  # what triggers https://github.com/ansible/ansible/issues/82454 (see
+  # roles/vagrant/tasks/main.yml for the fuller story), so it's gone.
   tasks:
-    - name: Add Virtualbox repo
-      ansible.builtin.deb822_repository:
-        name: virtualbox
-        types: deb
-        uris: "{{ virtualbox_apt_url }}"
-        suites: "{{ virtualbox_apt_suite }}"
-        components: "{{ virtualbox_apt_components }}"
-        signed_by: "{{ virtualbox_apt_key_url }}"
-        state: present
-
     - name: Install Virtualbox
       ansible.builtin.apt:
         name: virtualbox-{{ virtualbox_version }}
