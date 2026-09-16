@@ -7,32 +7,76 @@
 # read again by the playbooks/roles that actually install each piece of
 # software. One canonical set of values means there's nothing to drift.
 #
-# signed_by is a URL in every case: whatever key that URL serves is
-# trusted on every run (trust-on-first-use, re-established each time).
-# See audit-findings.md for the follow-up to pin expected fingerprints
-# instead.
+# signed_by used to be a URL in every case: whatever key that URL served
+# was trusted on every run (trust-on-first-use, re-established each
+# time). Pinned instead now: files/apt-keys/*.asc holds each vendor's key
+# as committed content, fetched and fingerprint-checked by hand, and
+# signed_by below reads it via lookup('file', ...) rather than fetching
+# it live. A legitimate key rotation (it happens -- HashiCorp rotated
+# theirs on 2026-09-09/10, see audit-findings.md) now fails loudly at
+# `apt-get update` -- caught by roles/apt_repo_check's mail-on-Err -- and
+# needs a deliberate, verified swap of the .asc file, not a silent
+# carry-on. Fingerprints checked at pinning time (2026-09-16):
+#   hashicorp:  D55C 0D1A C78A 8D81 26CB 631C FC9C A96A CA02 6560
+#               (matches HashiCorp's own advisory HCSEC-2026-33)
+#   virtualbox: B9F8 D658 297A F3EF C18D 5CDF A2F6 83C5 2980 AECF
+#               (matches virtualbox.org/wiki/Linux_Downloads)
+#   jenkins:    5E38 6EAD B55F 0150 4CAE 8BCF 7198 F4B7 14AB FC68
+#               (dated 2025-12-22, matches their Dec-2025 key rotation
+#               for the 2.543+ series; Jenkins doesn't publish this
+#               fingerprint on its own separate page to cross-check)
+#   docker:     9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88
+#               (the same fingerprint every Docker install guide has
+#               used since 2017-02-22; Docker doesn't publish a security
+#               advisory with a fingerprint the way HashiCorp/Oracle do,
+#               so this is the softest of the four checks)
+#
+# The lookup()s below are anchored on inventory_dir, not playbook_dir --
+# deliberately. playbook_dir tracks whichever playbook file is currently
+# executing, not the top-level entry point: docker_apt_gpg_key is read
+# both from roles/apt_repos (running inside playbook.yml itself, where
+# playbook_dir happens to be the repo root) and from
+# roles/geerlingguy.docker's own task (running inside the separate play
+# import_playbook'd from playbooks/docker/main.yml, where playbook_dir
+# resolves to playbooks/docker/ instead) -- same variable, two different
+# answers, and the second one 404s on a path that never existed. Learned
+# this the hard way 2026-09-16. inventory_dir is the directory holding
+# dev.ini, fixed for the whole run regardless of which playbook file is
+# currently active, so it's the only anchor here that's actually stable.
 
 hashicorp_apt_url: "https://apt.releases.hashicorp.com"
-hashicorp_apt_key_url: "https://apt.releases.hashicorp.com/gpg"
+# Source for re-fetching on a legitimate rotation: https://apt.releases.hashicorp.com/gpg
+hashicorp_apt_signed_by: "{{ lookup('file', inventory_dir + '/files/apt-keys/hashicorp.asc') }}"
 
 virtualbox_apt_url: "https://download.virtualbox.org/virtualbox/debian"
 virtualbox_apt_suite: "noble"
 virtualbox_apt_components:
   - "contrib"
-virtualbox_apt_key_url: "https://www.virtualbox.org/download/oracle_vbox_2016.asc"
+# Source for re-fetching on a legitimate rotation: https://www.virtualbox.org/download/oracle_vbox_2016.asc
+virtualbox_apt_signed_by: "{{ lookup('file', inventory_dir + '/files/apt-keys/virtualbox.asc') }}"
 
 jenkins_stable_url: "https://pkg.jenkins.io/debian-stable"
-# Jenkins rotates this filename yearly -- see audit-findings.md.
-jenkins_apt_key_url: "https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key"
+# Source for re-fetching when Jenkins next rotates this key:
+# https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key (that
+# filename itself rotates yearly too -- see audit-findings.md -- but
+# with the key pinned, the filename only matters for fetching repo
+# metadata/packages, not for trust).
+jenkins_apt_signed_by: "{{ lookup('file', inventory_dir + '/files/apt-keys/jenkins.asc') }}"
 
 # Mirrors roles/geerlingguy.docker/defaults/main.yml. Defined here, ahead of
 # that role's own defaults, purely so apt_repos can assert Docker's repo
 # before basics' first cache refresh runs. Group vars beat role defaults,
 # so geerlingguy.docker picks these same values back up later -- if that
 # role's upstream ever changes them (repo layout, key location), update
-# them here too.
+# them here too. docker_apt_gpg_key keeps its exact name (rather than
+# being renamed to *_signed_by like the other three) because
+# geerlingguy.docker's own vendored task reads this specific variable
+# name directly for its own re-assertion -- rename it and that second
+# assertion silently falls back to the vendored role's own default (a
+# live URL fetch again), quietly undoing the pin for half of this repo's
+# two assertions.
 docker_repo_url: "https://download.docker.com/linux"
 docker_apt_release_channel: stable
 docker_apt_ansible_distribution: "{{ 'ubuntu' if ansible_facts.distribution in ['Pop!_OS', 'Linux Mint'] else ansible_facts.distribution }}"
-docker_apt_gpg_key: "{{ docker_repo_url }}/{{ docker_apt_ansible_distribution | lower }}/gpg"
+docker_apt_gpg_key: "{{ lookup('file', inventory_dir + '/files/apt-keys/docker.asc') }}"
 docker_apt_filename: "docker"

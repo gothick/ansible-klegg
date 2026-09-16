@@ -42,18 +42,18 @@
       uris: "{{ hashicorp_apt_url }}"
       suites: ["{{ ansible_facts.distribution_release | lower }}"]
       components: [main]
-      signed_by: "{{ hashicorp_apt_key_url }}"
+      signed_by: "{{ hashicorp_apt_signed_by }}"
       enabled: true
     - name: virtualbox
       uris: "{{ virtualbox_apt_url }}"
       suites: "{{ virtualbox_apt_suite }}"
       components: "{{ virtualbox_apt_components }}"
-      signed_by: "{{ virtualbox_apt_key_url }}"
+      signed_by: "{{ virtualbox_apt_signed_by }}"
     - name: jenkins
       uris: "{{ jenkins_stable_url }}"
       suites: "binary/"
       components: []
-      signed_by: "{{ jenkins_apt_key_url }}"
+      signed_by: "{{ jenkins_apt_signed_by }}"
     - name: "{{ docker_apt_filename }}"
       uris: "{{ docker_repo_url }}/{{ docker_apt_ansible_distribution | lower }}"
       suites: "{{ ansible_facts.distribution_release }}"
