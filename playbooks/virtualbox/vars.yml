@@ -1,6 +1,6 @@
 ---
 # Repo connection details (virtualbox_apt_url, virtualbox_apt_suite,
-# virtualbox_apt_components, virtualbox_apt_key_url) now live in
+# virtualbox_apt_components, virtualbox_apt_signed_by) now live in
 # group_vars/all/apt_repos.yml, alongside the other three third-party
 # repos -- see roles/apt_repos.
 virtualbox_version: "7.2"
