@@ -9,6 +9,21 @@
 frigate_image: "ghcr.io/blakeblackshear/frigate:stable"
 frigate_config_dir: "/opt/frigate/config"
 
+# --- MQTT (Home Assistant's own Mosquitto) ---
+# Used for the on-demand camera pattern below, not for anything Frigate
+# needs by itself -- this could stay "enabled: false" in the template
+# forever if every camera just ran continuously. homeassistant.home, not
+# .local -- klegg doesn't run mDNS (separate item, noted in the audit
+# doc), so a .local name won't resolve here even though it would from a
+# laptop/phone on the same network.
+frigate_mqtt_host: "homeassistant.home"
+frigate_mqtt_port: 1883
+# frigate_mqtt_username / frigate_mqtt_password: NOT here -- add them to
+# group_vars/all/frigate_vault.yml by hand (same reasoning as the camera
+# credentials: that file's vault-encrypted and neither sandbox can touch
+# it). Use a dedicated Mosquitto login for this rather than your own HA
+# user, if you haven't already got one lying around.
+
 # 128MB is Frigate's own rule of thumb for a couple of cameras detecting
 # at up to 720p (used for /tmp/cache, where segments live briefly before
 # being muxed into recordings). Bump this if you add more cameras or go
@@ -93,3 +108,17 @@ frigate_cameras:
     detect_width: 1024
     detect_height: 768
     record_retain_days: 28
+    # On-demand, not always-on: this ESP32 runs hot while streaming, and
+    # there's already a PIR sensor covering the same spot, so Frigate's
+    # own detection would just be duplicating a job a $5 sensor already
+    # does, at the cost of running the camera continuously. A Home
+    # Assistant automation (PIR motion -> MQTT ON, PIR clear for a while
+    # -> MQTT OFF against frigate/front_steps_camera/enabled/set -- set up
+    # in HA itself, not this repo) starts/stops Frigate's ffmpeg for this
+    # camera entirely; go2rtc only pulls from the camera while something's
+    # consuming its restream, so the ESP32 should go idle and cool down
+    # the same way Matt already confirmed it does with no RTSP client
+    # connected. detect_enabled: false below means no object detection
+    # runs even while the camera's on -- there's nothing here for it to
+    # usefully classify, the PIR already decided "something's there."
+    detect_enabled: false

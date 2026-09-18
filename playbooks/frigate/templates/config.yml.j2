@@ -3,8 +3,21 @@
 # full schema -- this is deliberately a minimal, working baseline, not a
 # tour of everything Frigate can do.
 
+#auth:
+#  reset_admin_password: true
+
 mqtt:
-  enabled: false
+  # Lets Home Assistant flip this camera on/off on demand (PIR sensor on
+  # the front steps -> HA automation -> MQTT), rather than Frigate running
+  # the ESP32 continuously. frigate_mqtt_username/password live in
+  # group_vars/all/frigate_vault.yml, added by hand from Matt's own shell
+  # (same reasoning as the camera credentials -- neither sandbox can touch
+  # an already-encrypted vault file).
+  enabled: true
+  host: "{{ frigate_mqtt_host }}"
+  port: {{ frigate_mqtt_port | default(1883) }}
+  user: "{{ frigate_mqtt_username }}"
+  password: "{{ frigate_mqtt_password }}"
 
 ffmpeg:
   # VAAPI via the N100's iGPU for decode. "preset-vaapi" is the broadly
@@ -98,6 +111,11 @@ cameras:
             - detect
             - record
     detect:
+      # False for a camera that only exists to record on demand (e.g. one
+      # gated by an external PIR sensor via MQTT, not Frigate's own
+      # detection) -- no point burning CPU running the object detector
+      # against footage nobody's asking it to classify.
+      enabled: {{ cam.detect_enabled | default(true) }}
       width: {{ cam.detect_width | default(1280) }}
       height: {{ cam.detect_height | default(720) }}
     record:
