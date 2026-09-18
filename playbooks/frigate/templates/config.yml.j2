@@ -1,0 +1,154 @@
+{{ ansible_managed | comment }}
+# Frigate NVR config. See https://docs.frigate.video/configuration/ for the
+# full schema -- this is deliberately a minimal, working baseline, not a
+# tour of everything Frigate can do.
+
+#auth:
+#  reset_admin_password: true
+
+mqtt:
+  # Lets Home Assistant flip this camera on/off on demand (PIR sensor on
+  # the front steps -> HA automation -> MQTT), rather than Frigate running
+  # the ESP32 continuously. frigate_mqtt_username/password live in
+  # group_vars/all/frigate_vault.yml, added by hand from Matt's own shell
+  # (same reasoning as the camera credentials -- neither sandbox can touch
+  # an already-encrypted vault file).
+  enabled: true
+  host: "{{ frigate_mqtt_host }}"
+  port: {{ frigate_mqtt_port | default(1883) }}
+  user: "{{ frigate_mqtt_username }}"
+  password: "{{ frigate_mqtt_password }}"
+
+ffmpeg:
+  # VAAPI via the N100's iGPU for decode. "preset-vaapi" is the broadly
+  # compatible choice across both H.264 and H.265 cameras; if every camera
+  # is one codec, Frigate also has narrower presets
+  # (preset-intel-qsv-h264/h265) that squeeze out a bit more. Requires
+  # /dev/dri passed through to the container (see main.yml) -- if this
+  # errors on first run with a permission/device-open failure rather than
+  # simply not accelerating, the container's default user likely can't
+  # access the render node; adding the host's `render` group GID to the
+  # container via `group_add` in main.yml is the usual fix. Find out live,
+  # don't guess in advance.
+  hwaccel_args: preset-vaapi
+
+detectors:
+  cpu1:
+    type: cpu
+    # Deliberately the bundled CPU detector, not OpenVINO, even though the
+    # N100's iGPU could run OpenVINO too. Current Frigate no longer ships
+    # a default OpenVINO model in the image -- it requires exporting a
+    # YOLO model to ONNX yourself and mounting it in (see
+    # https://docs.frigate.video/configuration/object_detectors/#openvino-detector).
+    # That's a real, worthwhile upgrade once this baseline is proven
+    # working -- CPU detection on an N100 is the more likely bottleneck
+    # than iGPU decode with more than a camera or two -- but not something
+    # to assert here on the strength of documentation alone, per the
+    # apt_repos lesson: verify live, don't ship "should work."
+
+{% macro camera_source_url(cam) -%}
+{%- if cam.credentials_key is defined -%}
+{%- set creds = frigate_camera_credentials[cam.credentials_key] -%}
+{%- set auth = creds.username + ':' + creds.password + '@' -%}
+{%- else -%}
+{%- set auth = '' -%}
+{%- endif -%}
+rtsp://{{ auth }}{{ cam.host }}:{{ cam.port | default(554) }}{{ cam.rtsp_path }}
+{%- endmacro %}
+
+{% set mjpeg_cameras = frigate_cameras | selectattr('mjpeg', 'defined') | selectattr('mjpeg') | list -%}
+{% if mjpeg_cameras -%}
+# go2rtc transcode for camera(s) that can only offer motion-JPEG (e.g. an
+# ESP32-CAM). Frigate's own detect/record pipeline wants H.264 -- MJPEG
+# would be both enormous to record and unreliable to feed straight into
+# the object detector -- so go2rtc (bundled in this same image, using its
+# own bundled ffmpeg) transcodes once here, and each such camera's own
+# ffmpeg.inputs below points at this local restream instead of the camera
+# directly. "#hardware" asks go2rtc to encode via the N100's iGPU (the
+# same /dev/dri already passed through for Frigate's own hwaccel) rather
+# than burning CPU on a software H.264 encode on top of an MJPEG decode --
+# worth confirming live that it actually took the hardware path rather
+# than silently falling back to software, the same way everything else in
+# this config needs confirming live rather than assumed. Stream name here
+# MUST match the camera's own key below -- that's how Frigate's camera
+# entry finds it on localhost.
+go2rtc:
+  ffmpeg:
+    # go2rtc's own hardware auto-detect (bare "#hardware" below) didn't
+    # reliably find /dev/dri/renderD128 on klegg -- ffmpeg kept crashing
+    # until this was made explicit, both here and in the stream's
+    # "#hardware=vaapi" suffix. Confirmed working live on klegg
+    # (2026-09-19), not assumed from docs.
+    global: "-vaapi_device /dev/dri/renderD128"
+  streams:
+{% for cam in mjpeg_cameras %}
+    {{ cam.name }}:
+      - "ffmpeg:{{ camera_source_url(cam) }}#video=h264#hardware=vaapi"
+{% endfor %}
+{% endif %}
+cameras:
+{% for cam in frigate_cameras %}
+  {{ cam.name }}:
+    enabled: true
+    ffmpeg:
+      inputs:
+        # credentials_key omitted on this camera entry -> no auth in the URL
+        # (an unauthenticated rtsp://host:port/path is a perfectly normal,
+        # valid input -- don't put placeholder/fake credentials in just to
+        # satisfy this template).
+        #
+        # mjpeg: true on this camera entry -> path points at the go2rtc
+        # restream above (already transcoded to H.264) rather than the
+        # camera directly, which only speaks MJPEG.
+        - path: "{{ ('rtsp://127.0.0.1:8554/' + cam.name) if cam.mjpeg | default(false) else camera_source_url(cam) }}"
+{% if cam.mjpeg | default(false) %}
+          # Reading back go2rtc's own restream, not the camera directly --
+          # this preset skips re-analysing what go2rtc already normalised,
+          # rather than treating it like a fresh, untrusted camera feed.
+          input_args: preset-rtsp-restream
+{% endif %}
+          roles:
+            - detect
+            - record
+    detect:
+      # False for a camera that only exists to record on demand (e.g. one
+      # gated by an external PIR sensor via MQTT, not Frigate's own
+      # detection) -- no point burning CPU running the object detector
+      # against footage nobody's asking it to classify.
+      enabled: {{ cam.detect_enabled | default(true) }}
+      width: {{ cam.detect_width | default(1280) }}
+      height: {{ cam.detect_height | default(720) }}
+    record:
+      enabled: true
+      retain:
+        days: {{ cam.record_retain_days | default(7) }}
+{% endfor -%}
+
+record:
+  enabled: true
+  # Rolling buffer for non-motion footage. "mode: all" keeps this buffer
+  # regardless of motion; per-camera record.retain above can override the
+  # day count. 1 day is a conservative starting point -- raise it once you
+  # know how much space is actually on the "frigate" Synology share and how
+  # these numbers translate into real usage.
+  retain:
+    days: 1
+    mode: all
+  # Frigate replaced its old single "events" retain bucket with a review
+  # classification split into "alerts" (things it's confident about) and
+  # "detections" (lower-confidence, or object types not marked alertable),
+  # each with its own retention -- the "events:" key this file used to use
+  # no longer exists in current Frigate and would fail validation. Same
+  # 14-day figure for both here; split them later if alerts and detections
+  # turn out to warrant different treatment.
+  alerts:
+    retain:
+      days: 14
+  detections:
+    retain:
+      days: 14
+
+snapshots:
+  enabled: true
+  retain:
+    default: 14

@@ -48,6 +48,9 @@
 - name: Install Uptime Kuma Docker container
   import_playbook: playbooks/uptime-kuma/main.yml
 
+- name: Install Frigate NVR
+  import_playbook: playbooks/frigate/main.yml
+
 # Needs to be after Docker & Docker Containers as we
 # want to allow the relevant ports in the firewall
 - name: Set up firewall
