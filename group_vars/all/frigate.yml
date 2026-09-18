@@ -1,0 +1,95 @@
+---
+# Frigate NVR: motion-triggered camera recording, running on klegg as a
+# Docker container (host networking, not the geerlingguy.docker bridge --
+# see the note in playbooks/frigate/main.yml for why). Recordings and
+# snapshots live on the Synology, not klegg's own disk: an N100 mini-PC
+# with a small root filesystem has no business hosting weeks of camera
+# footage locally. See roles/nfs_mount for the mount itself.
+
+frigate_image: "ghcr.io/blakeblackshear/frigate:stable"
+frigate_config_dir: "/opt/frigate/config"
+
+# 128MB is Frigate's own rule of thumb for a couple of cameras detecting
+# at up to 720p (used for /tmp/cache, where segments live briefly before
+# being muxed into recordings). Bump this if you add more cameras or go
+# higher resolution -- too small shows up as dropped/corrupted recording
+# segments, not an obvious OOM.
+frigate_shm_size: "256m"
+
+# --- NFS-mounted storage on the Synology (DS218play, 192.168.1.204) ---
+frigate_synology_host: "DS218play.home"   # static DNS entry; DS218play.local (mDNS) and 192.168.1.204 also work
+frigate_synology_export: "/volume1/frigate"
+frigate_local_media_path: "/mnt/frigate"
+
+# Fixed UID/GID for the frigate system user, used to own
+# frigate_config_dir on klegg's own disk. NOT what governs write access
+# to the NFS-mounted recordings directory, because the Frigate container
+# itself runs as root by default -- upstream has open discussions/feature
+# requests about supporting a non-root PUID/PGID (see
+# https://github.com/blakeblackshear/frigate/discussions/18375) but it
+# isn't there as a clean, documented option, so don't fight it on a first
+# pass by forcing `user:` in main.yml's docker_container task -- that risks
+# breaking whatever the entrypoint does for hardware/device access as root.
+#
+# What actually matters for the recordings mount is how the Synology's
+# NFS permission rule for the "frigate" share handles ROOT requests
+# specifically (DSM: Control Panel > Shared Folder > frigate > Edit > NFS
+# Permissions > the rule for klegg):
+#   - "No mapping" with root squashing off: root's requests really are
+#     root, and root can write anywhere the export allows.
+#   - Root squashed to a mapped account: root's requests land as that
+#     mapped account instead, which then needs write permission on the
+#     share.
+# Check this before the first real run -- same class of silent-failure
+# risk as the wrong UID story would have been: mounts fine, container
+# writes fail. If Frigate ever does get switched to run as a fixed
+# non-root user, THIS is the UID/GID that would need to match the export's
+# mapping.
+frigate_uid: 476
+frigate_gid: 476
+
+nfs_mounts:
+  - name: frigate
+    server: "{{ frigate_synology_host }}"
+    export: "{{ frigate_synology_export }}"
+    path: "{{ frigate_local_media_path }}"
+    # No owner/group/mode here -- roles/nfs_mount doesn't manage them on
+    # the mount point any more (see that role's tasks/main.yml for why:
+    # found out live that it's actively wrong once the mount succeeds).
+    # What actually governs write access through this mount is the
+    # Synology's own NFS permission rule for the "frigate" share -- see
+    # frigate_uid/frigate_gid above.
+
+# --- Cameras ---
+# One entry per camera. rtsp_path has no default on purpose -- it's
+# brand-specific (Hikvision-style /Streaming/Channels/101, Reolink-style
+# /h264Preview_01_main, etc.) and guessing one would be worse than
+# forcing you to look it up once. credentials_key indexes into
+# frigate_camera_credentials in group_vars/all/frigate_vault.yml -- OMIT
+# it entirely for a camera with no RTSP auth configured; don't put fake
+# credentials in just to satisfy the template, an unauthenticated
+# rtsp://host:port/path is fine as far as Frigate's concerned.
+#
+# mjpeg: true -- set this on a camera that can only offer motion-JPEG
+# (e.g. an ESP32-CAM) rather than H.264/H.265. Routes that camera through
+# a go2rtc hardware-accelerated transcode first (see config.yml.j2);
+# leave unset/false for any normal H.264 camera, which needs none of that.
+#
+# Replace/extend this list with your real cameras, then vault-encrypt
+# frigate_vault.yml (see that file for the exact command) before
+# committing real credentials anywhere near git.
+frigate_cameras:
+  - name: front_steps_camera
+    # credentials_key omitted: this camera has no RTSP auth configured, so
+    # there's nothing to look up in frigate_vault.yml.
+    # This is an ESP32-based camera -- RTSP transport, but the actual
+    # payload is motion-JPEG, not H.264. mjpeg: true routes it through the
+    # go2rtc transcode in config.yml.j2 instead of feeding it to Frigate
+    # raw.
+    host: "192.168.1.83"
+    port: 554
+    rtsp_path: "/mjpeg/1"
+    mjpeg: true
+    detect_width: 1024
+    detect_height: 768
+    record_retain_days: 28

@@ -1,0 +1,58 @@
+---
+# Generic, reusable role: mounts one or more NFS exports. Consumer supplies
+# a list in nfs_mounts, e.g.:
+#
+#   nfs_mounts:
+#     - name: frigate
+#       server: DS218play.home
+#       export: /volume1/frigate
+#       path: /mnt/frigate
+#       opts: "..."         # optional, overrides nfs_mount_default_opts
+#
+# Uses ansible.posix.mount with state=mounted (an fstab entry, mounted
+# immediately) rather than hand-written systemd unit files -- see
+# defaults/main.yml for why the fstab options alone are enough to get
+# proper systemd automount behaviour without maintaining unit files
+# ourselves.
+#
+# Deliberately no owner/group/mode on the mount point: found out live
+# (2026-09-18, against a Synology DS218play) why that's not this role's
+# job. The "create the directory" task ran on EVERY play, including runs
+# after the mount had already succeeded -- at which point the path isn't
+# a local directory any more, it's the live NFS share, and chown/chmod-ing
+# it goes over the wire to the server instead of the local filesystem.
+# That failed outright with "Operation not permitted" once the server's
+# own permission mapping (root squash or otherwise) didn't like klegg's
+# root asking to chown its export root. More fundamentally: whatever's
+# visible at a mount point is governed entirely by what's mounted there,
+# not by what the client set beforehand -- asserting local ownership on a
+# path that's about to have a network filesystem mounted over it was
+# never actually meaningful, mount succeeding or not. UID/GID/permission
+# alignment for what gets WRITTEN through an NFS mount is a server-side
+# concern (the export's squash/permission settings), never something this
+# role can fix from the client side -- see the consumer's own vars file
+# for that discussion instead.
+
+- name: Ensure nfs-common is installed
+  ansible.builtin.apt:
+    name: nfs-common
+    state: present
+
+- name: Ensure local mount point directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+  loop: "{{ nfs_mounts }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Mount NFS exports (fstab entry, automount-capable)
+  ansible.posix.mount:
+    src: "{{ item.server }}:{{ item.export }}"
+    path: "{{ item.path }}"
+    fstype: nfs
+    opts: "{{ item.opts | default(nfs_mount_default_opts) }}"
+    state: mounted
+  loop: "{{ nfs_mounts }}"
+  loop_control:
+    label: "{{ item.name }}"

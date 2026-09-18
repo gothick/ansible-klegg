@@ -1,0 +1,30 @@
+---
+# Default mount options for nfs_mounts entries that don't specify their own.
+#
+# x-systemd.automount + _netdev: no hand-authored .mount/.automount unit
+# files, no systemd-escape name-mangling to get wrong. systemd's own
+# fstab generator turns an fstab line with these options into a proper
+# automount unit at boot: the mount is pulled in lazily on first access
+# instead of blocking boot on the network being up, and _netdev tells
+# systemd not to even attempt it until network.target is up.
+#
+# soft,timeo=50,retrans=2 (~10s before giving up on the current network
+# retry) rather than the NFS default of "hard": if the NAS reboots or
+# drops off the network, a process touching this mount gets an I/O error
+# it can recover from instead of hanging forever in D-state. That's the
+# right trade for camera recordings -- a gap in footage beats a wedged
+# frigate container -- but it's a real trade-off, not a free lunch: "hard"
+# is the safer default for anything that can't tolerate a silently
+# truncated write (e.g. a database file). Don't reuse this default
+# unthinkingly for a different consumer of this role.
+#
+# Deliberately no nfsvers= pin. First live run against a Synology
+# DS218play failed outright with "Protocol not supported" against a
+# hardcoded nfsvers=4.1 -- that DSM's nfsd evidently doesn't speak 4.1.
+# Leaving nfsvers unset lets the kernel client and server negotiate down
+# to whatever they both actually support (typically 4.2 -> 4.1 -> 4.0 ->
+# 3 in that order) instead of this role asserting a version it has no way
+# to confirm the server on the other end actually offers. If you need a
+# specific version for a specific server, override opts: on that
+# nfs_mounts entry rather than changing this shared default.
+nfs_mount_default_opts: "rw,noatime,_netdev,x-systemd.automount,x-systemd.idle-timeout=600,x-systemd.mount-timeout=15,soft,timeo=50,retrans=2"

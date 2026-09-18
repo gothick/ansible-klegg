@@ -7,6 +7,9 @@ firewall_allowed_tcp_ports:
   - "139" # Samba
   - "445" # Samba
   - "3001" # Uptime-Kuma
+  - "8971" # Frigate (authenticated web UI/API)
+  - "8554" # Frigate (RTSP restream via go2rtc)
+  - "8555" # Frigate (WebRTC over TCP, via go2rtc)
 
   # - "32400" # (access to the Plex Media Server) [required]
   # - "8324" # (controlling Plex for Roku via Plex Companion)
@@ -15,6 +18,7 @@ firewall_allowed_tcp_ports:
 firewall_allowed_udp_ports:
   - "137" # Samba
   - "138" # Samba
+  - "8555" # Frigate (WebRTC over UDP, via go2rtc)
 #   - "1900" # (access to the Plex DLNA Server)
 #   - "5353" # (older Bonjour/Avahi network discovery)
 #   - "32410" # (current GDM network discovery)
