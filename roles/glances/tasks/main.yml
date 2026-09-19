@@ -1,0 +1,73 @@
+---
+# Basic host stats for Home Assistant: CPU, load, memory, per-mount disk
+# usage and I/O, network rates, temperatures, uptime. Glances serves them as
+# a REST API; Home Assistant's built-in Glances integration reads it (add it
+# in HA under Settings > Devices & Services: host klegg.local, port
+# glances_port, Glances API version 3, no SSL, no auth).
+#
+# Deliberately the stock Ubuntu package (3.4.0.3, which serves API v3 --
+# what Home Assistant's integration wants) rather than the Docker image: a
+# container sees its own mounts and network, so getting real *host* disk and
+# network numbers out of one takes bind-mount contortions for no benefit.
+#
+# Access control is the firewall, not Glances: its API has no
+# authentication by default, so playbooks/firewall/vars/main.yml only lets
+# Home Assistant's address reach glances_port. Nothing else on the LAN can.
+
+- name: Install Glances
+  ansible.builtin.apt:
+    name:
+      - glances
+      # The web/REST server. Only a *Recommends* of the glances package,
+      # so it has to be named explicitly when recommends are off (below).
+      - python3-bottle
+      # Belt and braces for temperature sensors: Home Assistant's docs
+      # mention it, and Glances reads the kernel's hwmon sensors either way.
+      # Needs no sensors-detect run for the N100's built-in ones.
+      - lm-sensors
+    # Recommends off: the package recommends matplotlib, influxdb and SNMP
+    # libraries, none of which a headless stats API needs.
+    install_recommends: false
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install the Glances config
+  ansible.builtin.template:
+    src: glances.conf.j2
+    dest: "{{ glances_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Glances
+
+- name: Create the systemd drop-in directory for glances.service
+  ansible.builtin.file:
+    path: /etc/systemd/system/glances.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the drop-in that switches glances.service to REST API mode
+  ansible.builtin.template:
+    src: glances-web.conf.j2
+    dest: /etc/systemd/system/glances.service.d/web.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Glances
+
+# The package's postinst has already enabled and started glances.service in
+# its packaged RPC-on-loopback form on a first run. Apply our config now,
+# rather than at the end of the whole play, so that the enable/start below
+# is really the last word.
+- name: Apply Glances changes now
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start Glances
+  ansible.builtin.systemd_service:
+    name: glances
+    enabled: true
+    state: started
+    daemon_reload: true

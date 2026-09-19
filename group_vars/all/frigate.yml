@@ -9,6 +9,16 @@
 frigate_image: "ghcr.io/blakeblackshear/frigate:stable"
 frigate_config_dir: "/opt/frigate/config"
 
+# Config schema version of the Frigate image above -- NOT the image tag.
+# Frigate stamps this into config.yml and, if the file's version is missing or
+# older than what the image expects, migrates the file and rewrites it on
+# disk at startup. Templating a config without it (or with an old one) made
+# Ansible and Frigate undo each other on every run, restarting Frigate each
+# time (found live 2026-09-19). When the image moves to a new Frigate
+# release, its first start migrates the file itself -- copy the migrated
+# shape back into templates/config.yml.j2 and bump this to match.
+frigate_config_version: "0.18-0"
+
 # --- MQTT (Home Assistant's own Mosquitto) ---
 # Used for the on-demand camera pattern below, not for anything Frigate
 # needs by itself -- this could stay "enabled: false" in the template

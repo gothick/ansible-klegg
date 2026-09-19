@@ -1,0 +1,21 @@
+---
+# Glances: read-only system stats (CPU, memory, disk, network, temperatures,
+# uptime, load) served as a REST API on klegg, for Home Assistant's built-in
+# Glances integration. See roles/glances for the how and the why.
+#
+# These live here, not in the role's defaults, because the firewall play
+# (playbooks/firewall) needs the same two values and a role's defaults
+# aren't visible to a different play.
+
+glances_port: 61208
+
+# The only address allowed to reach glances_port (see the source-limited
+# rule in playbooks/firewall/vars/main.yml). This is Home Assistant --
+# homeassistant.home / homeassistant.local resolve to the same host.
+#
+# An IP rather than the hostname on purpose: iptables resolves a name once,
+# at the moment the rule is inserted, and the firewall script runs early at
+# boot. If DNS isn't answering yet the rule fails to load. A literal address
+# has no such failure mode, and matches the existing RDP rule in that file.
+# If Home Assistant's address ever changes, change it here and re-run.
+glances_allowed_source: "192.168.1.73"

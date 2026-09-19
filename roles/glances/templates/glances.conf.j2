@@ -1,0 +1,7 @@
+{{ ansible_managed | comment }}
+# Private Glances config. Only what we override is here; every other
+# section uses Glances' built-in defaults. See roles/glances/defaults/main.yml.
+
+[fs]
+{% set hidden = glances_fs_hide + ((nfs_mounts | default([]) | map(attribute='path') | map('regex_escape') | list) if glances_hide_nfs_mounts else []) %}
+hide={{ hidden | join(',') }}
