@@ -1,0 +1,59 @@
+---
+# klegg has no mDNS support out of the box -- .local (and, by extension,
+# resolving other things like homeassistant.local) simply fails from klegg
+# itself, even though every other device on the LAN resolves it fine via
+# their own mDNS stacks. Found live while wiring up Frigate's MQTT
+# connection to Home Assistant's own broker (2026-09-19); see
+# claude/audit-findings.md for that history. Home Assistant's own host is
+# addressed as homeassistant.home (a static DNS entry, resolved at the
+# router) rather than .local specifically because of this gap.
+#
+# Deliberately hand-rolled rather than pulling in a Galaxy role: the actual
+# work here is two packages, a running service, and one config line --
+# every published mDNS/avahi role on Galaxy either does exactly this (and
+# is now one more pinned dependency to track for no benefit) or is part of
+# a much larger framework (debops.avahi) that assumes you want the whole
+# DebOps furniture, which this repo doesn't. Not worth it for this.
+#
+# avahi-daemon is the actual mDNS responder/resolver; libnss-mdns is the
+# glibc NSS plugin that lets ordinary hostname lookups (gethostbyname,
+# getent hosts, curl, etc.) go via avahi-daemon for .local names rather
+# than only working through avahi-specific tools. Installing avahi-daemon
+# also means klegg advertises itself as klegg.local to the rest of the
+# LAN, for free.
+
+- name: Install avahi-daemon and libnss-mdns
+  ansible.builtin.apt:
+    name:
+      - avahi-daemon
+      - libnss-mdns
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure avahi-daemon is enabled and running
+  ansible.builtin.systemd:
+    name: avahi-daemon
+    enabled: true
+    state: started
+
+# Modern Ubuntu often ships mdns4_minimal in the default nsswitch.conf
+# hosts line already (inert until libnss-mdns exists to back it) -- but
+# per the apt_repos/go2rtc/record-schema lesson repeated throughout this
+# project: verify live, don't assume the box in front of you matches
+# what a blog post says stock Ubuntu looks like. This checks first and
+# only edits if genuinely missing, preserving whatever else is already on
+# that line (files, resolve, dns, ...) instead of overwriting it wholesale.
+- name: Check whether nsswitch.conf already does mDNS hostname lookups
+  ansible.builtin.command:
+    cmd: grep -E '^hosts:.*mdns4_minimal' /etc/nsswitch.conf
+  register: mdns_nsswitch_check
+  changed_when: false
+  failed_when: false
+
+- name: Add mdns4_minimal to the nsswitch.conf hosts line
+  ansible.builtin.replace:
+    path: /etc/nsswitch.conf
+    regexp: '^(hosts:\s*)(.*)$'
+    replace: '\1mdns4_minimal [NOTFOUND=return] \2'
+  when: mdns_nsswitch_check.rc != 0
