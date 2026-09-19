@@ -12,6 +12,7 @@
     - gothick_user
     - gothick.ghostty
     - ssh_lockdown
+    - mdns
     - useful_tools
     - gothick.awscli
     - geerlingguy.pip
