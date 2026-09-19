@@ -1,0 +1,31 @@
+{{ ansible_managed | comment }}
+# Drop-in for the packaged glances.service.
+#
+# The Ubuntu package ships that unit running `glances -s -B 127.0.0.1` --
+# Glances' old RPC server mode, on loopback only -- and enables it at install.
+# Home Assistant's integration talks to the REST API instead (web server
+# mode), so we replace the command line rather than adding a second service.
+# The empty ExecStart= clears the packaged one first; without it systemd
+# refuses a unit with two ExecStart= lines.
+#
+# --disable-webui: serve only the REST API, not the browser UI as well.
+# No --bind: it listens on all interfaces, and the firewall play
+# limits who can reach glances_port to Home Assistant.
+
+[Service]
+ExecStart=
+ExecStart=/usr/bin/glances -w --disable-webui -C {{ glances_config_path }} -p {{ glances_port }} --disable-plugin {{ glances_disabled_plugins | join(',') }}
+
+# The package creates a "glances" system user but its unit doesn't use it and
+# runs as root. Nothing here needs root, so don't.
+User=glances
+Restart=on-failure
+
+# Hardening. Checked with strace rather than guessed: run as an unprivileged
+# user, Glances writes only to /tmp (a scratch file and its log,
+# /tmp/glances-glances.log) and nowhere else, which PrivateTmp covers. So the
+# rest of the filesystem can be read-only to it.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true

@@ -1,4 +1,10 @@
 {{ ansible_managed | comment }}
+# Frigate's config schema version. MUST match the running image (see
+# frigate_config_version in group_vars/all/frigate.yml). If this is missing
+# or older than the image, Frigate assumes the file is from an older release,
+# "migrates" it and REWRITES it on disk at every startup -- which Ansible
+# then sees as a change to revert, restarting Frigate every single run.
+version: {{ frigate_config_version }}
 # Frigate NVR config. See https://docs.frigate.video/configuration/ for the
 # full schema -- this is deliberately a minimal, working baseline, not a
 # tour of everything Frigate can do.
@@ -128,20 +134,25 @@ cameras:
       height: {{ cam.detect_height | default(720) }}
     record:
       enabled: true
-      retain:
+      # Keep every recorded segment for this many days. (motion.days: 0 means
+      # no *extra* retention for motion-only segments beyond that.)
+      continuous:
         days: {{ cam.record_retain_days | default(7) }}
+      motion:
+        days: 0
 {% endfor -%}
 
 record:
   enabled: true
-  # Rolling buffer for non-motion footage. "mode: all" keeps this buffer
-  # regardless of motion; per-camera record.retain above can override the
-  # day count. 1 day is a conservative starting point -- raise it once you
-  # know how much space is actually on the "frigate" Synology share and how
-  # these numbers translate into real usage.
-  retain:
+  # Global default retention: continuous = everything recorded, motion =
+  # segments with motion in them. Per-camera record.continuous / motion above
+  # override these. 1 day is a conservative starting point -- raise it once
+  # you know how much space is actually on the "frigate" Synology share and
+  # how these numbers translate into real usage.
+  continuous:
     days: 1
-    mode: all
+  motion:
+    days: 1
   # Frigate replaced its old single "events" retain bucket with a review
   # classification split into "alerts" (things it's confident about) and
   # "detections" (lower-confidence, or object types not marked alertable),

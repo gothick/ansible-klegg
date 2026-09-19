@@ -35,6 +35,10 @@ firewall_allowed_udp_ports:
 # - { src: "443", dest: "4443" }
 
 static_rules:
+  # Glances REST API (roles/glances) -- Home Assistant only. Port and source
+  # come from group_vars/all/glances.yml; see the note there for why the
+  # source is an IP address rather than homeassistant.home.
+  - "iptables -A INPUT -p tcp --dport {{ glances_port }} -s {{ glances_allowed_source }} -j ACCEPT"
   - "iptables -A INPUT -p tcp --dport 3389 -s 192.168.1.103 -j ACCEPT"
   - "iptables -A INPUT -p udp --dport 3389 -s 192.168.1.103 -j ACCEPT"
 #  - "iptables -t nat -A PREROUTING -p tcp -m addrtype --dst-type LOCAL --dport 80 -j REDIRECT --to-port 8080"

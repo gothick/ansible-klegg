@@ -1,0 +1,45 @@
+---
+# glances_port and glances_allowed_source are in group_vars/all/glances.yml,
+# because the firewall play needs them too.
+
+# Where our private Glances config goes. Deliberately NOT the packaged
+# /etc/glances/glances.conf: that's a dpkg conffile, so editing it means
+# every future package upgrade wants to ask what to do about it. A separate
+# file, passed with -C, holds only the sections we override; everything
+# else falls back to Glances' built-in defaults (checked live: a partial
+# file works).
+glances_config_path: /etc/glances/ansible.conf
+
+# Plugins to switch off.
+#  - docker:      the unprivileged glances user can't read the Docker socket,
+#                 and giving it access (the docker group) is root-equivalent.
+#                 Container stats aren't part of "basic host stats". Turn it
+#                 back on by adding the user to the docker group and removing
+#                 this entry.
+#  - processlist: publishes every process's full command line through an
+#                 unauthenticated API. Home Assistant only wants the
+#                 process *counts* (the processcount plugin), which is
+#                 unaffected.
+#  - ports:       pings the default gateway every 30s. Nothing here uses it.
+# (The ip and cloud plugins, which do make outbound lookups, already ship
+# disabled in Glances' own defaults -- checked, not assumed.)
+glances_disabled_plugins:
+  - docker
+  - processlist
+  - ports
+
+# Mount points to keep out of Glances' filesystem list. Regexes,
+# matched against the mount point. These two are the packaged defaults
+# (boot partitions and snap loop devices, which always read 100% used and
+# would just be noise as Home Assistant entities); they have to be repeated
+# here because setting hide= replaces the default rather than adding to it.
+glances_fs_hide:
+  - /boot.*
+  - /snap.*
+
+# Also hide every mount managed by the nfs_mount role. Asking a soft NFS
+# mount for its free space while the NAS is unreachable can stall for many
+# seconds, and Glances would sit waiting on it while answering Home
+# Assistant. The Synology integration already reports the NAS's own volume
+# usage, so nothing is lost. Set to false to see them.
+glances_hide_nfs_mounts: true
