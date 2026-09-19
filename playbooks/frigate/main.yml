@@ -51,6 +51,7 @@
         owner: frigate
         group: frigate
         mode: '0644'
+      register: frigate_config_file
 
     - name: Pull Frigate image
       community.docker.docker_image:
@@ -63,6 +64,12 @@
         image: "{{ frigate_image }}"
         state: started
         restart_policy: unless-stopped
+        # Frigate only reads config.yml at startup, and docker_container
+        # won't notice a bind-mounted file changed underneath it -- so
+        # without this, a playbook run would template the new config and
+        # leave the old one running. Only restarts when the template
+        # actually changed, so an unchanged run stays idempotent.
+        restart: "{{ frigate_config_file is changed }}"
         # Host networking, not the geerlingguy.docker bridge (which is
         # disabled anyway -- playbooks/docker/vars.yml sets
         # docker_daemon_options.bridge: "none", per the audit's Frigate/NFS

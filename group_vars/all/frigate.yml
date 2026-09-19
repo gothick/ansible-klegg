@@ -24,6 +24,17 @@ frigate_mqtt_port: 1883
 # it). Use a dedicated Mosquitto login for this rather than your own HA
 # user, if you haven't already got one lying around.
 
+# --- Object detection ---
+# Labels Frigate will track, from the COCO-80 set the bundled model knows
+# (the default is person only). Anything not listed here is ignored even if
+# the detector sees it. Note "package"/"parcel" is NOT in COCO -- that
+# needs a Frigate+ model. By default Frigate treats car + person as review
+# "alerts" and everything else tracked (cat, dog here) as "detections".
+frigate_tracked_objects:
+  - person
+  - cat
+  - dog
+
 # 128MB is Frigate's own rule of thumb for a couple of cameras detecting
 # at up to 720p (used for /tmp/cache, where segments live briefly before
 # being muxed into recordings). Bump this if you add more cameras or go
@@ -108,17 +119,19 @@ frigate_cameras:
     detect_width: 1024
     detect_height: 768
     record_retain_days: 28
-    # On-demand, not always-on: this ESP32 runs hot while streaming, and
-    # there's already a PIR sensor covering the same spot, so Frigate's
-    # own detection would just be duplicating a job a $5 sensor already
-    # does, at the cost of running the camera continuously. A Home
-    # Assistant automation (PIR motion -> MQTT ON, PIR clear for a while
-    # -> MQTT OFF against frigate/front_steps_camera/enabled/set -- set up
-    # in HA itself, not this repo) starts/stops Frigate's ffmpeg for this
-    # camera entirely; go2rtc only pulls from the camera while something's
-    # consuming its restream, so the ESP32 should go idle and cool down
-    # the same way Matt already confirmed it does with no RTSP client
-    # connected. detect_enabled: false below means no object detection
-    # runs even while the camera's on -- there's nothing here for it to
-    # usefully classify, the PIR already decided "something's there."
-    detect_enabled: false
+    # Object detection ON (2026-09-19): Frigate classifies what's in frame
+    # (person / cat / dog, see frigate_tracked_objects) rather than just
+    # recording. Still on-demand, not always-on: this ESP32 runs hot while
+    # streaming, so a Home Assistant automation (PIR motion -> MQTT ON, PIR
+    # clear for a while -> MQTT OFF against
+    # frigate/front_steps_camera/enabled/set -- set up in HA itself, not
+    # this repo) starts/stops Frigate's ffmpeg for this camera; go2rtc only
+    # pulls from the camera while something's consuming its restream, so
+    # the ESP32 idles and cools down between visitors. The PIR answers
+    # "is something there?", Frigate answers "what?". Detection only runs
+    # while the camera is switched on.
+    detect_enabled: true
+    # Frames/sec fed to the detector. 5 is Frigate's own recommendation;
+    # going higher costs CPU for little gain. Must not exceed what the
+    # ESP32 stream actually delivers.
+    detect_fps: 5

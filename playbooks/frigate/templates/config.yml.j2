@@ -46,6 +46,13 @@ detectors:
     # to assert here on the strength of documentation alone, per the
     # apt_repos lesson: verify live, don't ship "should work."
 
+# Which labels to track. Default in Frigate is "person" only.
+objects:
+  track:
+{% for label in frigate_tracked_objects %}
+    - {{ label }}
+{% endfor %}
+
 {% macro camera_source_url(cam) -%}
 {%- if cam.credentials_key is defined -%}
 {%- set creds = frigate_camera_credentials[cam.credentials_key] -%}
@@ -116,6 +123,7 @@ cameras:
       # detection) -- no point burning CPU running the object detector
       # against footage nobody's asking it to classify.
       enabled: {{ cam.detect_enabled | default(true) }}
+      fps: {{ cam.detect_fps | default(5) }}
       width: {{ cam.detect_width | default(1280) }}
       height: {{ cam.detect_height | default(720) }}
     record:
