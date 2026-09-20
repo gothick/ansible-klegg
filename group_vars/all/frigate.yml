@@ -35,7 +35,11 @@ frigate_mqtt_port: 1883
 # user, if you haven't already got one lying around.
 
 # --- Object detection ---
-# Labels Frigate will track, from the COCO-80 set the bundled model knows
+# OpenVINO device for the detector: GPU (the N100's iGPU), CPU, or NPU. If
+# Frigate logs an OpenCL/GPU plugin error on startup, set this to "CPU".
+frigate_detector_device: "GPU"
+
+# Labels Frigate will track, from the COCO set the bundled OpenVINO model knows (91-class labelmap)
 # (the default is person only). Anything not listed here is ignored even if
 # the detector sees it. Note "package"/"parcel" is NOT in COCO -- that
 # needs a Frigate+ model. By default Frigate treats car + person as review

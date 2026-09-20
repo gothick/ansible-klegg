@@ -39,18 +39,29 @@ ffmpeg:
   hwaccel_args: preset-vaapi
 
 detectors:
-  cpu1:
-    type: cpu
-    # Deliberately the bundled CPU detector, not OpenVINO, even though the
-    # N100's iGPU could run OpenVINO too. Current Frigate no longer ships
-    # a default OpenVINO model in the image -- it requires exporting a
-    # YOLO model to ONNX yourself and mounting it in (see
-    # https://docs.frigate.video/configuration/object_detectors/#openvino-detector).
-    # That's a real, worthwhile upgrade once this baseline is proven
-    # working -- CPU detection on an N100 is the more likely bottleneck
-    # than iGPU decode with more than a camera or two -- but not something
-    # to assert here on the strength of documentation alone, per the
-    # apt_repos lesson: verify live, don't ship "should work."
+  ov:
+    type: openvino
+    # GPU = the N100's iGPU via the same /dev/dri already passed through for
+    # VAAPI decode (see main.yml). "CPU" also works (OpenVINO's CPU plugin is
+    # usually still faster than Frigate's plain "cpu" TFLite detector) and is
+    # the fallback if the GPU plugin can't open the render node -- change
+    # frigate_detector_device rather than editing this file.
+    device: {{ frigate_detector_device }}
+
+# The stock model that ships inside the Frigate image (built from Intel's
+# Open Model Zoo, FP16): SSDLite MobileNet v2, 300x300, COCO 91-class labels.
+# Nothing to download or mount. NB the docs no longer advertise it, but the
+# image's Dockerfile still copies it to /openvino-model/ -- if a future
+# release drops it, Frigate will fail at startup with a missing-model error.
+# model_type defaults to "ssd" for the openvino detector, which is right here;
+# it would need setting explicitly for a YOLO/RF-DETR model.
+model:
+  width: 300
+  height: 300
+  input_tensor: nhwc
+  input_pixel_format: bgr
+  path: /openvino-model/ssdlite_mobilenet_v2.xml
+  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
 
 # Which labels to track. Default in Frigate is "person" only.
 objects:
