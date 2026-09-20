@@ -7,10 +7,10 @@
 # before any of the roles/playbooks that actually own the docker,
 # virtualbox, hashicorp or jenkins repos had a chance to re-assert their
 # key and source for this run. So one stale or rotated key on any of the
-# four halted the entire play immediately, long before it ever reached
+# five halted the entire play immediately, long before it ever reached
 # the place that would have refreshed it.
 #
-# Fix: assert all four up front, then force a fresh cache refresh. A
+# Fix: assert all five up front, then force a fresh cache refresh. A
 # broken repo now fails here -- loudly, against the repo actually
 # responsible -- instead of opaquely inside basics.
 #
@@ -54,6 +54,11 @@
       suites: "binary/"
       components: []
       signed_by: "{{ jenkins_apt_signed_by }}"
+    - name: tailscale
+      uris: "{{ tailscale_apt_url }}"
+      suites: "{{ tailscale_apt_suite }}"
+      components: [main]
+      signed_by: "{{ tailscale_apt_signed_by }}"
     - name: "{{ docker_apt_filename }}"
       uris: "{{ docker_repo_url }}/{{ docker_apt_ansible_distribution | lower }}"
       suites: "{{ ansible_facts.distribution_release }}"

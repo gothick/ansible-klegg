@@ -1,0 +1,37 @@
+---
+# The auth key used to join the tailnet is NOT here: tailscale_auth_key lives
+# in group_vars/all/tailscale_vault.yml (vault-encrypted, created by hand --
+# see tasks/main.yml for how to make the key). It's only read when the node
+# isn't already logged in, so a run against an already-joined klegg doesn't
+# need it at all.
+
+# Settings for this node, as flags for `tailscale up` (first login) and
+# `tailscale set` (drift correction on later runs). One list feeds both, so
+# the two can't disagree.
+#
+#  --accept-dns=false
+#      klegg must keep resolving *.home (homeassistant.home for Frigate's
+#      MQTT, DS218play.home for the NFS mount) through the router, whatever
+#      DNS settings the tailnet's admin console ever ends up with. klegg
+#      doesn't need MagicDNS itself; the phone does that job.
+#
+#  --netfilter-mode=off
+#      tailscaled writes no iptables rules of its own. In its default mode it
+#      accepts *everything* arriving on tailscale0, which bypasses
+#      playbooks/firewall: Glances (no auth) and Frigate's unauthenticated
+#      port 5000 would become reachable from the tailnet. With it off, the
+#      firewall play stays the only authority on what klegg answers, over
+#      tailscale0 exactly as over the LAN. What that costs: the two things
+#      tailscaled needs iptables for -- NAT for a subnet router, and an exit
+#      node -- won't work without more effort. Neither is wanted. The one
+#      rule Tailscale itself asks the admin to add in this mode (accept its
+#      UDP port, 41641) is in playbooks/firewall/vars/main.yml.
+tailscale_set_args:
+  - --accept-dns=false
+  - --netfilter-mode=off
+
+# Records the settings above as last applied, so a change to them is noticed
+# (and applied with `tailscale set`) without re-running `tailscale set` --
+# and reporting "changed" -- on every single playbook run. Same idea as the
+# basics role's initial-upgrade marker.
+tailscale_settings_marker: /var/lib/tailscale/ansible-applied-settings

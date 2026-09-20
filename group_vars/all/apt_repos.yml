@@ -1,8 +1,8 @@
 ---
 # Canonical connection details for every third-party apt repository this
-# host uses: docker, virtualbox, hashicorp (vagrant) and jenkins.
+# host uses: docker, virtualbox, hashicorp (vagrant), jenkins and tailscale.
 #
-# Read by roles/apt_repos, which asserts all four -- and refreshes the apt
+# Read by roles/apt_repos, which asserts all five -- and refreshes the apt
 # cache -- before anything else touches it (see that role for why), and
 # read again by the playbooks/roles that actually install each piece of
 # software. One canonical set of values means there's nothing to drift.
@@ -30,19 +30,8 @@
 #               used since 2017-02-22; Docker doesn't publish a security
 #               advisory with a fingerprint the way HashiCorp/Oracle do,
 #               so this is the softest of the four checks)
-#
-# The lookup()s below are anchored on inventory_dir, not playbook_dir --
-# deliberately. playbook_dir tracks whichever playbook file is currently
-# executing, not the top-level entry point: docker_apt_gpg_key is read
-# both from roles/apt_repos (running inside playbook.yml itself, where
-# playbook_dir happens to be the repo root) and from
-# roles/geerlingguy.docker's own task (running inside the separate play
-# import_playbook'd from playbooks/docker/main.yml, where playbook_dir
-# resolves to playbooks/docker/ instead) -- same variable, two different
-# answers, and the second one 404s on a path that never existed. Learned
-# this the hard way 2026-09-16. inventory_dir is the directory holding
-# dev.ini, fixed for the whole run regardless of which playbook file is
-# currently active, so it's the only anchor here that's actually stable.
+#   tailscale:  2596 A99E AAB3 3821 893C  0A79 458C A832 957F 5868
+#               (checked September 20, 2026 against https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg)
 
 hashicorp_apt_url: "https://apt.releases.hashicorp.com"
 # Source for re-fetching on a legitimate rotation: https://apt.releases.hashicorp.com/gpg
@@ -62,6 +51,12 @@ jenkins_stable_url: "https://pkg.jenkins.io/debian-stable"
 # with the key pinned, the filename only matters for fetching repo
 # metadata/packages, not for trust).
 jenkins_apt_signed_by: "{{ lookup('file', inventory_dir + '/files/apt-keys/jenkins.asc') }}"
+
+
+tailscale_apt_url: "https://pkgs.tailscale.com/stable/ubuntu"
+tailscale_apt_suite: "noble"
+# Source for re-fetching on a legitimate rotation: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
+tailscale_apt_signed_by: "{{ lookup('file', inventory_dir + '/files/apt-keys/tailscale.asc') }}"
 
 # Mirrors roles/geerlingguy.docker/defaults/main.yml. Defined here, ahead of
 # that role's own defaults, purely so apt_repos can assert Docker's repo

@@ -20,6 +20,10 @@ firewall_allowed_udp_ports:
   - "138" # Samba
   - "8555" # Frigate (WebRTC over UDP, via go2rtc)
   - "5353" # mDNS (avahi-daemon) -- see roles/mdns
+  - "41641" # Tailscale (tailscaled's own port) -- see roles/tailscale. Not strictly
+            # needed (klegg's outbound connections get their replies anyway) but
+            # lets peers connect directly rather than via a relay. Tailscale asks
+            # for this rule when netfilter-mode is off, as it is here.
 #   - "1900" # (access to the Plex DLNA Server)
 #   - "32410" # (current GDM network discovery)
 #   - "32412" # (current GDM network discovery)
