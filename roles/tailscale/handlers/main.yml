@@ -1,0 +1,6 @@
+---
+- name: Apply Tailscale settings
+  ansible.builtin.command:
+    argv: "{{ ['tailscale', 'set'] + tailscale_set_args }}"
+  # Only ever runs because a setting changed, so "changed" is the truth.
+  changed_when: true

@@ -1,0 +1,98 @@
+---
+# Tailscale on klegg, so a phone can reach Frigate (https://klegg:8971) from
+# anywhere without port-forwarding anything on the router.
+#
+# Hand-rolled rather than artis3n.tailscale, for the reasons roles/mdns gives:
+# the work is a package, a service and one login, and that role manages the
+# apt repository and key itself, which would fight roles/apt_repos (the one
+# place each third-party repo is asserted, with its key pinned in
+# files/apt-keys). The repo and key are therefore NOT set up here -- see
+# tailscale_apt_* in group_vars/all/apt_repos.yml.
+#
+# One-off setup, by hand, before the first run that includes this role:
+#
+#   1. Tailnet policy (admin console > Access controls): make sure a tag such
+#      as tag:server exists under "tagOwners". Tagged auth keys can't be
+#      generated until it does.
+#   2. Admin console > Settings > Keys > Generate auth key: NOT reusable,
+#      pre-approved, tagged tag:server. It's only used for klegg's first
+#      login (or a re-login), and expires within 90 days at most. Tagging
+#      matters: a tagged device has node-key expiry disabled by default, so
+#      klegg won't quietly drop off the tailnet after a few months in its
+#      cabinet.
+#   3. ansible-vault create group_vars/all/tailscale_vault.yml, containing:
+#          tailscale_auth_key: tskey-auth-...
+#   4. Pin Tailscale's apt key: see files/apt-keys/tailscale.asc, and the
+#      tailscale_apt_* notes in group_vars/all/apt_repos.yml.
+
+- name: Install Tailscale
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Enable and start tailscaled
+  ansible.builtin.systemd_service:
+    name: tailscaled
+    enabled: true
+    state: started
+
+# tailscaled needs a moment after (re)starting before it knows whether it's
+# logged in. Ask too early and it reports NoState/Starting, which would look
+# like "needs login" and send a perfectly good, already-joined node off to
+# burn its one-off auth key. So wait for a settled answer. Deliberately
+# ignores the exit code: the JSON is what matters, and it's printed whether
+# or not the node is logged in.
+- name: Wait for tailscaled to say what state it is in
+  ansible.builtin.command: tailscale status --json
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+  until: >-
+    (tailscale_status.stdout | trim).startswith('{') and
+    ((tailscale_status.stdout | from_json).BackendState | default('')) not in ['', 'NoState', 'Starting']
+  retries: 15
+  delay: 2
+
+- name: Work out whether this node still needs to join the tailnet
+  ansible.builtin.set_fact:
+    tailscale_needs_login: "{{ (tailscale_status.stdout | from_json).BackendState != 'Running' }}"
+
+- name: Make sure we have an auth key to join with
+  ansible.builtin.assert:
+    that:
+      - tailscale_auth_key is defined
+      - tailscale_auth_key | length > 0
+    fail_msg: >-
+      klegg isn't logged in to a tailnet and there's no tailscale_auth_key to
+      log it in with. See the notes at the top of roles/tailscale/tasks/main.yml
+      for making one and adding it to group_vars/all/tailscale_vault.yml.
+  when: tailscale_needs_login
+
+# The key is on the command line for the moment this takes, so it's visible
+# to anyone who can run ps on klegg. On a single-user home server, for a
+# one-off key that's dead as soon as it's used, that's acceptable; no_log
+# keeps it out of Ansible's output.
+- name: Join the tailnet
+  ansible.builtin.command:
+    argv: "{{ ['tailscale', 'up', '--auth-key=' + tailscale_auth_key] + tailscale_set_args }}"
+  when: tailscale_needs_login
+  # Only runs when we're not logged in, so "changed" is the truth.
+  changed_when: true
+  no_log: true
+  notify: Apply Tailscale settings
+
+- name: Record the Tailscale settings we want applied
+  ansible.builtin.copy:
+    content: "{{ tailscale_set_args | join(' ') }}\n"
+    dest: "{{ tailscale_settings_marker }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Apply Tailscale settings
+
+# Apply now rather than at the end of the whole play, so the settings are in
+# force before anything after this role runs.
+- name: Apply Tailscale settings now if they changed
+  ansible.builtin.meta: flush_handlers
