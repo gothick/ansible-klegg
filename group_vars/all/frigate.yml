@@ -19,6 +19,10 @@ frigate_config_dir: "/opt/frigate/config"
 # shape back into templates/config.yml.j2 and bump this to match.
 frigate_config_version: "0.18-0"
 
+# --- Web UI login session ---
+frigate_auth_session_length: 2592000   # 30 days
+frigate_auth_refresh_time: 604800      # 7 days
+
 # --- MQTT (Home Assistant's own Mosquitto) ---
 # Used for the on-demand camera pattern below, not for anything Frigate
 # needs by itself -- this could stay "enabled: false" in the template

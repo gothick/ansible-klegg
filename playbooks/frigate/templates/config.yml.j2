@@ -9,8 +9,15 @@ version: {{ frigate_config_version }}
 # full schema -- this is deliberately a minimal, working baseline, not a
 # tour of everything Frigate can do.
 
-#auth:
-#  reset_admin_password: true
+auth:
+  # Login cookie lifetime -- see the notes on frigate_auth_session_length /
+  # frigate_auth_refresh_time in group_vars/all/frigate.yml.
+  session_length: {{ frigate_auth_session_length }}
+  refresh_time: {{ frigate_auth_refresh_time }}
+  # To recover a lost admin password: uncomment, run the playbook, read the
+  # new password from the Frigate container logs, then re-comment it and run
+  # again (left on, it resets the password on every startup).
+  # reset_admin_password: true
 
 mqtt:
   # Lets Home Assistant flip this camera on/off on demand (PIR sensor on
