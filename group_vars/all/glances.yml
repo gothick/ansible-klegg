@@ -19,3 +19,15 @@ glances_port: 61208
 # has no such failure mode, and matches the existing RDP rule in that file.
 # If Home Assistant's address ever changes, change it here and re-run.
 glances_allowed_source: "192.168.1.73"
+
+# Home Assistant's MAC address, for the IPv6 rule. Its IPv6 address isn't
+# stable enough for a firewall rule: the LAN's IPv6 prefix
+# (fdc5:a31e:d5d8:6e18::/64) isn't the router's. Home Assistant's own
+# Thread border router advertises it, because nothing else on the LAN
+# advertises one. (The Plusnet hub sends no IPv6 router advertisements;
+# checked with tcpdump, 2026-10-18.) The prefix can change if another
+# border router takes over or Home Assistant's Thread setup is reset.
+# Matching the MAC works whatever the address, because Home Assistant and
+# klegg are on the same LAN segment. A MAC can be spoofed on the LAN, but
+# so can an IP address, so this is no weaker than the IPv4 rule.
+glances_allowed_source_mac: "20:f8:3b:03:8a:1f"
