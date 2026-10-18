@@ -9,12 +9,17 @@
 # refuses a unit with two ExecStart= lines.
 #
 # --disable-webui: serve only the REST API, not the browser UI as well.
-# No --bind: it listens on all interfaces, and the firewall play
-# limits who can reach glances_port to Home Assistant.
+# -B ::: listen on all interfaces, IPv4 and IPv6. Glances' default is
+# 0.0.0.0, IPv4 only. With net.ipv6.bindv6only=0 (the Linux default) one
+# :: socket takes IPv4 connections as well; checked live, 2026-10-18. Home
+# Assistant connects over IPv6 when klegg.local resolves to an IPv6
+# address, so IPv4-only meant its connections hung until it fell back.
+# The firewall play limits who can reach glances_port to Home Assistant,
+# on both address families.
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/glances -w --disable-webui -C {{ glances_config_path }} -p {{ glances_port }} --disable-plugin {{ glances_disabled_plugins | join(',') }}
+ExecStart=/usr/bin/glances -w --disable-webui -C {{ glances_config_path }} -B :: -p {{ glances_port }} --disable-plugin {{ glances_disabled_plugins | join(',') }}
 
 # The package creates a "glances" system user but its unit doesn't use it and
 # runs as root. Nothing here needs root, so don't.

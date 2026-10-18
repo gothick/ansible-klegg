@@ -50,6 +50,12 @@ static_rules:
   - "iptables -t nat -A PREROUTING -p tcp -m addrtype --dst-type LOCAL --dport 443 -j REDIRECT --to-port 4443"
   - "iptables -t nat -I OUTPUT -p tcp -o lo --dport 443 -j REDIRECT --to-port 4443"
 
+# geerlingguy.firewall takes these as-is for ip6tables.
+firewall_ip6_additional_rules:
+  # Glances REST API over IPv6 -- Home Assistant only, matched by MAC
+  # rather than address. See group_vars/all/glances.yml for why.
+  - "ip6tables -A INPUT -p tcp --dport {{ glances_port }} -m mac --mac-source {{ glances_allowed_source_mac }} -j ACCEPT"
+
 # UFW doesn't seem to be enabled by default anyway, but better safe than sorry.
 firewall_disable_ufw: true
 
