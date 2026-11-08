@@ -12,8 +12,8 @@ None
 #### Variables
 
  * `postfix_install` [default: `[postfix, mailutils, libsasl2-2, sasl2-bin, libsasl2-modules]`]: Packages to install
- * `postfix_hostname` [default: `{{ ansible_fqdn }}`]: Host name, used for `myhostname` and in `mydestination`
- * `postfix_mailname` [default: `{{ ansible_fqdn }}`]: Mail name (in `/etc/mailname`), used for `myorigin`
+ * `postfix_hostname` [default: `{{ ansible_facts['fqdn'] }}`]: Host name, used for `myhostname` and in `mydestination`
+ * `postfix_mailname` [default: `{{ ansible_facts['fqdn'] }}`]: Mail name (in `/etc/mailname`), used for `myorigin`
 
  * `postfix_compatibility_level` [optional]: With backwards compatibility turned on (the compatibility_level value is less than the Postfix built-in value), Postfix looks for settings that are left at their implicit default value, and logs a message when a backwards-compatible default setting is required (e.g. `2`, `Postfix >= 3.0`)
 
@@ -41,9 +41,10 @@ None
  * `postfix_smtp_ipv4_bind` [optional]: Outbound network interfaces to use (IPv4) ([see](http://www.postfix.org/postconf.5.html#smtp_bind_address))
  * `postfix_smtp_ipv6_bind` [optional]: Outbound network interfaces to use (IPv6) ([see](http://www.postfix.org/postconf.5.html#smtp_bind_address6))
 
- * `postfix_relayhost` [default: `''` (no relay host)]: Hostname to relay all email to
- * `postfix_relayhost_mxlookup` [default: `false` (not using mx lookup)]: Lookup for MX record instead of A record for relayhost
- * `postfix_relayhost_port` [default: 587]: Relay port (on `postfix_relayhost`, if set)
+ * `postfix_relayhost` [default: `''` (no relay host)]: Hostname to relay all email to. **Deprecated**, use `postfix_relayhosts`.
+ * `postfix_relayhosts` [default: `[]` (no relay host)]: List of hostnames to relay all email to (setting multiple hosts only works in **postfix 3.5 and later**)
+ * `postfix_relayhost_mxlookup` [default: `false` (not using mx lookup)]: Lookup for MX record instead of A record for relayhosts
+ * `postfix_relayhost_port` [default: `587`]: Relay port (on all hosts in `postfix_relayhosts`)
  * `postfix_relaytls` [default: `false`]: Use TLS when sending with a relay host
 
  * `postfix_smtpd_client_restrictions` [optional]: List of client restrictions ([see](http://www.postfix.org/postconf.5.html#smtpd_client_restrictions))
@@ -54,7 +55,7 @@ None
  * `postfix_smtpd_data_restrictions` [optional]: List of data restrictions ([see](http://www.postfix.org/postconf.5.html#smtpd_data_restrictions))
 
  * `postfix_sasl_auth_enable` [default: `true`]: Enable SASL authentication in the SMTP client
- * `postfix_sasl_user` [default: `postmaster@{{ ansible_domain }}`]: SASL relay username
+ * `postfix_sasl_user` [default: `postmaster@{{ ansible_facts['domain'] }}`]: SASL relay username
  * `postfix_sasl_password` [default: `k8+haga4@#pR`]: SASL relay password **Make sure to change!**
  * `postfix_sasl_security_options` [default: `noanonymous`]: SMTP client SASL security options
  * `postfix_sasl_tls_security_option` [default: `noanonymous`]: SMTP client SASL TLS security options
@@ -149,7 +150,7 @@ Provide the relay host name if you want to enable relaying:
     postfix_aliases:
       - user: root
         alias: you@yourdomain.org
-    postfix_relayhost: mail.yourdomain.org
+    postfix_relayhosts: [mail.yourdomain.org]
 ```
 
 Provide the relay domain name and use MX records if you want to enable relaying to DNS MX records of a domain:
@@ -163,7 +164,7 @@ Provide the relay domain name and use MX records if you want to enable relaying 
     postfix_aliases:
       - user: root
         alias: you@yourdomain.org
-    postfix_relayhost: yourdomain.org
+    postfix_relayhosts: [yourdomain.org]
     postfix_relayhost_mxlookup: true
 ```
 
@@ -179,14 +180,14 @@ Conditional relaying:
       - pattern: 'root@yourdomain.org'
         result: ':'
       - pattern: '*'
-        result: "smtp:{{ ansible_lo['ipv4']['address'] }}:1025"
+        result: "smtp:{{ ansible_facts['lo']['ipv4']['address'] }}:1025"
     postfix_sender_dependent_relayhost_maps:
       - pattern: 'logcheck@yourdomain.org'
         result: 'DUNNO'
       - pattern: 'pflogsumm@yourdomain.org'
         result: 'DUNNO'
       - pattern: '*'
-        result: "smtp:{{ ansible_lo['ipv4']['address'] }}:1025"
+        result: "smtp:{{ ansible_facts['lo']['ipv4']['address'] }}:1025"
 ```
 
 Aliases with regexp table (forward all local mail to specified address):
@@ -214,7 +215,7 @@ For AWS SES support:
     postfix_aliases:
       - user: root
         alias: sesverified@yourdomain.org
-    postfix_relayhost: email-smtp.us-east-1.amazonaws.com
+    postfix_relayhost: [email-smtp.us-east-1.amazonaws.com]
     postfix_relaytls: true
     # AWS IAM SES credentials (not access key):
     postfix_sasl_user: AKIXXXXXXXXXXXXXXXXX
@@ -232,7 +233,7 @@ For MailHog support:
     postfix_aliases:
       - user: root
         alias: you@yourdomain.org
-    postfix_relayhost: "{{ ansible_lo['ipv4']['address'] }}"
+    postfix_relayhost: ["{{ ansible_facts['lo']['ipv4']['address'] }}"]
     postfix_relayhost_port: 1025
     postfix_sasl_auth_enable: false
 ```
@@ -248,7 +249,7 @@ For Gmail support:
     postfix_aliases:
       - user: root
         alias: you@yourdomain.org
-    postfix_relayhost: smtp.gmail.com
+    postfix_relayhost: [smtp.gmail.com]
     postfix_relaytls: true
     postfix_smtp_tls_cafile: /etc/ssl/certs/ca-certificates.crt
     postfix_sasl_user: 'foo'
